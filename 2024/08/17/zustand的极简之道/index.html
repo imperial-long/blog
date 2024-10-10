@@ -5,25 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
 <meta name="theme-color" content="#222">
 <meta name="generator" content="Hexo 7.3.0">
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/blog/images/logo.svg" color="#222">
 
-<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/blog/css/main.css">
 
 
-<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/all.min.css">
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+    var CONFIG = {"hostname":"imperial-long.github.io","root":"/blog/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
   <meta name="description" content="引言本文将从状态管理的核心设计理念出发以及对观察者模式的简单实现，带领大家一步步探索 Zustand 的核心原理，并通过实际代码展示如何实现一个类似 Zustand 的状态管理库。本文采用面向对象的方式，方便读者更容易理解其背后的设计思路和实现细节 目标 灵活应用观察者设计模式，解耦实项目中的数据流和逻辑 掌握 Zustand 的核心设计理念，了解其简洁高效的状态管理方法 通过 TypeScrip">
 <meta property="og:type" content="article">
 <meta property="og:title" content="状态管理">
-<meta property="og:url" content="http://example.com/2024/08/17/zustand%E7%9A%84%E6%9E%81%E7%AE%80%E4%B9%8B%E9%81%93/index.html">
+<meta property="og:url" content="https://imperial-long.github.io/blog/2024/08/17/zustand%E7%9A%84%E6%9E%81%E7%AE%80%E4%B9%8B%E9%81%93/index.html">
 <meta property="og:site_name" content="朱广龙的个人博客">
 <meta property="og:description" content="引言本文将从状态管理的核心设计理念出发以及对观察者模式的简单实现，带领大家一步步探索 Zustand 的核心原理，并通过实际代码展示如何实现一个类似 Zustand 的状态管理库。本文采用面向对象的方式，方便读者更容易理解其背后的设计思路和实现细节 目标 灵活应用观察者设计模式，解耦实项目中的数据流和逻辑 掌握 Zustand 的核心设计理念，了解其简洁高效的状态管理方法 通过 TypeScrip">
 <meta property="og:locale" content="en_US">
@@ -36,7 +36,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://p0-xtjj-private.juejin.cn/tos-cn-i-73owjymdk6/5a645ea63bba404888871990f5e18b11~tplv-73owjymdk6-jj-mark-v1:0:0:0:0:5o6Y6YeR5oqA5pyv56S-5Yy6IEAg54ix5aW95oi35aSW55qE5YmN56uv:q75.awebp?policy=eyJ2bSI6MywidWlkIjoiMjc1MjgzMjg0ODUzODc4MiJ9&rk3s=f64ab15b&x-orig-authkey=f32326d3454f2ac7e96d3d06cdbb035152127018&x-orig-expires=1729142766&x-orig-sign=QtcqsGjv5ONuT3v0KegUNRWxhys=">
 
-<link rel="canonical" href="http://example.com/2024/08/17/zustand%E7%9A%84%E6%9E%81%E7%AE%80%E4%B9%8B%E9%81%93/">
+<link rel="canonical" href="https://imperial-long.github.io/blog/2024/08/17/zustand%E7%9A%84%E6%9E%81%E7%AE%80%E4%B9%8B%E9%81%93/">
 
 
 <script id="page-configurations">
@@ -98,7 +98,7 @@
 
   <div class="site-meta">
 
-    <a href="/" class="brand" rel="start">
+    <a href="/blog/" class="brand" rel="start">
       <span class="logo-line-before"><i></i></span>
       <h1 class="site-title">朱广龙的个人博客</h1>
       <span class="logo-line-after"><i></i></span>
@@ -118,12 +118,12 @@
   <ul id="menu" class="main-menu menu">
         <li class="menu-item menu-item-home">
 
-    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+    <a href="/blog/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
 
   </li>
   </ul>
@@ -154,10 +154,10 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2024/08/17/zustand%E7%9A%84%E6%9E%81%E7%AE%80%E4%B9%8B%E9%81%93/">
+    <link itemprop="mainEntityOfPage" href="https://imperial-long.github.io/blog/2024/08/17/zustand%E7%9A%84%E6%9E%81%E7%AE%80%E4%B9%8B%E9%81%93/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="image" content="/blog/images/avatar.gif">
       <meta itemprop="name" content="朱广龙">
       <meta itemprop="description" content="定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识">
     </span>
@@ -255,7 +255,7 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/react-zustand/" rel="tag"># react zustand</a>
+              <a href="/blog/tags/react-zustand/" rel="tag"># react zustand</a>
           </div>
 
         
@@ -264,7 +264,7 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2024/04/18/beginwork%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B/" rel="prev" title="beginwork核心流程">
+    <a href="/blog/2024/04/18/beginwork%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B/" rel="prev" title="beginwork核心流程">
       <i class="fa fa-chevron-left"></i> beginwork核心流程
     </a></div>
       <div class="post-nav-item"></div>
@@ -338,7 +338,7 @@
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
-          <a href="/archives/">
+          <a href="/blog/archives/">
         
           <span class="site-state-item-count">11</span>
           <span class="site-state-item-name">posts</span>
@@ -395,19 +395,19 @@
   </div>
 
   
-  <script src="/lib/anime.min.js"></script>
-  <script src="/lib/velocity/velocity.min.js"></script>
-  <script src="/lib/velocity/velocity.ui.min.js"></script>
+  <script src="/blog/lib/anime.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.ui.min.js"></script>
 
-<script src="/js/utils.js"></script>
+<script src="/blog/js/utils.js"></script>
 
-<script src="/js/motion.js"></script>
-
-
-<script src="/js/schemes/muse.js"></script>
+<script src="/blog/js/motion.js"></script>
 
 
-<script src="/js/next-boot.js"></script>
+<script src="/blog/js/schemes/muse.js"></script>
+
+
+<script src="/blog/js/next-boot.js"></script>
 
 
 

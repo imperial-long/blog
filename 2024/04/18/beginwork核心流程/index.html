@@ -5,25 +5,25 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
 <meta name="theme-color" content="#222">
 <meta name="generator" content="Hexo 7.3.0">
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+  <link rel="apple-touch-icon" sizes="180x180" href="/blog/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/blog/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/blog/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/blog/images/logo.svg" color="#222">
 
-<link rel="stylesheet" href="/css/main.css">
+<link rel="stylesheet" href="/blog/css/main.css">
 
 
-<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+<link rel="stylesheet" href="/blog/lib/font-awesome/css/all.min.css">
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+    var CONFIG = {"hostname":"imperial-long.github.io","root":"/blog/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
   <meta name="description" content="问题1、react更新逻辑是从roo开始的，那么是如何找到发生更新的组件呢？ 2、fiber进行beginWork一定会render吗？beiginWork和render的关系是怎么样的呢 3、beginwork的更新流程为什么是从组件开始的？ 4、childLans的作用是什么？ state改变是组件更新的唯一条件在当前react版本，视图的更新来源于组件内部 state 的改变。如果想要更新视">
 <meta property="og:type" content="article">
 <meta property="og:title" content="beginwork核心流程">
-<meta property="og:url" content="http://example.com/2024/04/18/beginwork%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B/index.html">
+<meta property="og:url" content="https://imperial-long.github.io/blog/2024/04/18/beginwork%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B/index.html">
 <meta property="og:site_name" content="朱广龙的个人博客">
 <meta property="og:description" content="问题1、react更新逻辑是从roo开始的，那么是如何找到发生更新的组件呢？ 2、fiber进行beginWork一定会render吗？beiginWork和render的关系是怎么样的呢 3、beginwork的更新流程为什么是从组件开始的？ 4、childLans的作用是什么？ state改变是组件更新的唯一条件在当前react版本，视图的更新来源于组件内部 state 的改变。如果想要更新视">
 <meta property="og:locale" content="en_US">
@@ -40,7 +40,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/a355d0aeb7d94098ad2cd692151ffb0e~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1266&h=886&s=105328&e=png&b=17141d">
 
-<link rel="canonical" href="http://example.com/2024/04/18/beginwork%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B/">
+<link rel="canonical" href="https://imperial-long.github.io/blog/2024/04/18/beginwork%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B/">
 
 
 <script id="page-configurations">
@@ -102,7 +102,7 @@
 
   <div class="site-meta">
 
-    <a href="/" class="brand" rel="start">
+    <a href="/blog/" class="brand" rel="start">
       <span class="logo-line-before"><i></i></span>
       <h1 class="site-title">朱广龙的个人博客</h1>
       <span class="logo-line-after"><i></i></span>
@@ -122,12 +122,12 @@
   <ul id="menu" class="main-menu menu">
         <li class="menu-item menu-item-home">
 
-    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+    <a href="/blog/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
 
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+    <a href="/blog/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
 
   </li>
   </ul>
@@ -158,10 +158,10 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2024/04/18/beginwork%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B/">
+    <link itemprop="mainEntityOfPage" href="https://imperial-long.github.io/blog/2024/04/18/beginwork%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="image" content="/blog/images/avatar.gif">
       <meta itemprop="name" content="朱广龙">
       <meta itemprop="description" content="定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识">
     </span>
@@ -334,7 +334,7 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/react/" rel="tag"># react</a>
+              <a href="/blog/tags/react/" rel="tag"># react</a>
           </div>
 
         
@@ -343,11 +343,11 @@
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/2024/04/17/form%E8%A1%A8%E5%8D%95%E5%AE%9E%E7%8E%B0%E6%80%9D%E8%B7%AF/" rel="prev" title="表单实现思路">
+    <a href="/blog/2024/04/17/form%E8%A1%A8%E5%8D%95%E5%AE%9E%E7%8E%B0%E6%80%9D%E8%B7%AF/" rel="prev" title="表单实现思路">
       <i class="fa fa-chevron-left"></i> 表单实现思路
     </a></div>
       <div class="post-nav-item">
-    <a href="/2024/08/17/zustand%E7%9A%84%E6%9E%81%E7%AE%80%E4%B9%8B%E9%81%93/" rel="next" title="状态管理">
+    <a href="/blog/2024/08/17/zustand%E7%9A%84%E6%9E%81%E7%AE%80%E4%B9%8B%E9%81%93/" rel="next" title="状态管理">
       状态管理 <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
@@ -420,7 +420,7 @@
 <div class="site-state-wrap motion-element">
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
-          <a href="/archives/">
+          <a href="/blog/archives/">
         
           <span class="site-state-item-count">11</span>
           <span class="site-state-item-name">posts</span>
@@ -477,19 +477,19 @@
   </div>
 
   
-  <script src="/lib/anime.min.js"></script>
-  <script src="/lib/velocity/velocity.min.js"></script>
-  <script src="/lib/velocity/velocity.ui.min.js"></script>
+  <script src="/blog/lib/anime.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.min.js"></script>
+  <script src="/blog/lib/velocity/velocity.ui.min.js"></script>
 
-<script src="/js/utils.js"></script>
+<script src="/blog/js/utils.js"></script>
 
-<script src="/js/motion.js"></script>
-
-
-<script src="/js/schemes/muse.js"></script>
+<script src="/blog/js/motion.js"></script>
 
 
-<script src="/js/next-boot.js"></script>
+<script src="/blog/js/schemes/muse.js"></script>
+
+
+<script src="/blog/js/next-boot.js"></script>
 
 
 
