@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="引言本文将从状态管理的核心设计理念出发以及对观察者模式的简单实现，带领大家一步步探索 Zustand 的核心原理，并通过实际代码展示如何实现一个类似 Zustand 的状态管理库。本文采用面向对象的方式，方便读者更容易理解其背后的设计思路和实现细节 目标 灵活应用观察者设计模式，解耦实项目中的数据流和逻辑 掌握 Zustand 的核心设计理念，了解其简洁高效的状态管理方法 通过 TypeScrip">
+<meta property="og:type" content="article">
+<meta property="og:title" content="状态管理">
+<meta property="og:url" content="http://example.com/2024/08/17/zustand%E7%9A%84%E6%9E%81%E7%AE%80%E4%B9%8B%E9%81%93/index.html">
+<meta property="og:site_name" content="朱广龙的个人博客">
+<meta property="og:description" content="引言本文将从状态管理的核心设计理念出发以及对观察者模式的简单实现，带领大家一步步探索 Zustand 的核心原理，并通过实际代码展示如何实现一个类似 Zustand 的状态管理库。本文采用面向对象的方式，方便读者更容易理解其背后的设计思路和实现细节 目标 灵活应用观察者设计模式，解耦实项目中的数据流和逻辑 掌握 Zustand 的核心设计理念，了解其简洁高效的状态管理方法 通过 TypeScrip">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://p0-xtjj-private.juejin.cn/tos-cn-i-73owjymdk6/5a645ea63bba404888871990f5e18b11~tplv-73owjymdk6-jj-mark-v1:0:0:0:0:5o6Y6YeR5oqA5pyv56S-5Yy6IEAg54ix5aW95oi35aSW55qE5YmN56uv:q75.awebp?policy=eyJ2bSI6MywidWlkIjoiMjc1MjgzMjg0ODUzODc4MiJ9&rk3s=f64ab15b&x-orig-authkey=f32326d3454f2ac7e96d3d06cdbb035152127018&x-orig-expires=1729142766&x-orig-sign=QtcqsGjv5ONuT3v0KegUNRWxhys=">
+<meta property="og:image" content="https://p0-xtjj-private.juejin.cn/tos-cn-i-73owjymdk6/7f29cfb6772d48fbb9312d6edccb6f57~tplv-73owjymdk6-jj-mark-v1:0:0:0:0:5o6Y6YeR5oqA5pyv56S-5Yy6IEAg54ix5aW95oi35aSW55qE5YmN56uv:q75.awebp?policy=eyJ2bSI6MywidWlkIjoiMjc1MjgzMjg0ODUzODc4MiJ9&rk3s=f64ab15b&x-orig-authkey=f32326d3454f2ac7e96d3d06cdbb035152127018&x-orig-expires=1729142766&x-orig-sign=fVU2PQS2xEcocexkxFJ+OGuu+qA=">
+<meta property="article:published_time" content="2024-08-17T12:39:00.000Z">
+<meta property="article:modified_time" content="2024-10-10T05:27:08.352Z">
+<meta property="article:author" content="朱广龙">
+<meta property="article:tag" content="react zustand">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://p0-xtjj-private.juejin.cn/tos-cn-i-73owjymdk6/5a645ea63bba404888871990f5e18b11~tplv-73owjymdk6-jj-mark-v1:0:0:0:0:5o6Y6YeR5oqA5pyv56S-5Yy6IEAg54ix5aW95oi35aSW55qE5YmN56uv:q75.awebp?policy=eyJ2bSI6MywidWlkIjoiMjc1MjgzMjg0ODUzODc4MiJ9&rk3s=f64ab15b&x-orig-authkey=f32326d3454f2ac7e96d3d06cdbb035152127018&x-orig-expires=1729142766&x-orig-sign=QtcqsGjv5ONuT3v0KegUNRWxhys=">
+
+<link rel="canonical" href="http://example.com/2024/08/17/zustand%E7%9A%84%E6%9E%81%E7%AE%80%E4%B9%8B%E9%81%93/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>状态管理 | 朱广龙的个人博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">朱广龙的个人博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/08/17/zustand%E7%9A%84%E6%9E%81%E7%AE%80%E4%B9%8B%E9%81%93/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="朱广龙">
+      <meta itemprop="description" content="定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="朱广龙的个人博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          状态管理
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2024-08-17 20:39:00" itemprop="dateCreated datePublished" datetime="2024-08-17T20:39:00+08:00">2024-08-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2024-10-10 13:27:08" itemprop="dateModified" datetime="2024-10-10T13:27:08+08:00">2024-10-10</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="引言"><a href="#引言" class="headerlink" title="引言"></a>引言</h2><p>本文将从<strong>状态管理的核心设计理念出发以及对观察者模式的简单实现</strong>，带领大家一步步探索 Zustand 的核心原理，并通过实际代码展示如何实现一个类似 Zustand 的状态管理库。<br><strong>本文采用面向对象的方式，方便读者更容易理解其背后的设计思路和实现细节</strong></p>
+<h2 id="目标"><a href="#目标" class="headerlink" title="目标"></a>目标</h2><ol>
+<li>灵活应用<strong>观察者设计模式</strong>，解耦实项目中的数据流和逻辑</li>
+<li>掌握 <strong>Zustand 的核心设计理念</strong>，了解其简洁高效的状态管理方法</li>
+<li>通过 <strong>TypeScript 编写自定义的 Hooks</strong>，提升代码质量和类型安全性</li>
+<li>熟练使用 <strong>TypeScript 的高级类型特性</strong>，优化状态管理逻辑</li>
+<li>利用 useSyncExternalStore <strong>优化状态管理的订阅与更新流程</strong></li>
+<li>学会使用<strong>usRef防止一些没必要的渲染</strong></li>
+<li>学会中间件开发思想</li>
+</ol>
+<h2 id="观察者设计模式"><a href="#观察者设计模式" class="headerlink" title="观察者设计模式"></a>观察者设计模式</h2><p>在很多前端框架或库中，观察者模式随处可见。Vue、MobX、Promise、React-query 等库都通过观察者模式实现了数据的订阅与更新。观察者模式的核心思想就是 <strong>发布-订阅，即观察者订阅主题对象，当主题发生变化时，通知所有观察者进行相应的操作</strong>。</p>
+<p>观察者模式的基本结构：</p>
+<ul>
+<li>主题（Subject）：负责维护状态并通知观察者。</li>
+<li>观察者（Observer）：订阅主题的变化并做出响应</li>
+</ul>
+<p><img src="https://p0-xtjj-private.juejin.cn/tos-cn-i-73owjymdk6/5a645ea63bba404888871990f5e18b11~tplv-73owjymdk6-jj-mark-v1:0:0:0:0:5o6Y6YeR5oqA5pyv56S-5Yy6IEAg54ix5aW95oi35aSW55qE5YmN56uv:q75.awebp?policy=eyJ2bSI6MywidWlkIjoiMjc1MjgzMjg0ODUzODc4MiJ9&rk3s=f64ab15b&x-orig-authkey=f32326d3454f2ac7e96d3d06cdbb035152127018&x-orig-expires=1729142766&x-orig-sign=QtcqsGjv5ONuT3v0KegUNRWxhys=" alt="image.png"></p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 主题对象</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Subject</span>&lt;T&gt; &#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="attr">watchers</span>: <span class="title class_">Set</span>&lt;<span class="title class_">Watcher</span>&lt;T&gt;&gt;;</span><br><span class="line">  <span class="keyword">private</span> <span class="attr">state</span>: T | <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line">  <span class="title function_">constructor</span>(<span class="params"><span class="attr">state</span>: T</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">watchers</span> = <span class="keyword">new</span> <span class="title class_">Set</span>();</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">state</span> = state || <span class="literal">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 注册观察者</span></span><br><span class="line">  <span class="title function_">register</span>(<span class="params"><span class="attr">watcher</span>: <span class="title class_">Watcher</span>&lt;T&gt;</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">watchers</span>.<span class="title function_">add</span>(watcher);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 移除观察者</span></span><br><span class="line">  <span class="title function_">remove</span>(<span class="params"><span class="attr">watcher</span>: <span class="title class_">Watcher</span>&lt;T&gt;</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">watchers</span>.<span class="title function_">delete</span>(watcher);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 通知所有观察者</span></span><br><span class="line">  <span class="title function_">notify</span>(<span class="params"><span class="attr">newState</span>: T, <span class="attr">oldState</span>: T</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">watchers</span>.<span class="title function_">forEach</span>(<span class="function"><span class="params">watcher</span> =&gt;</span> &#123;</span><br><span class="line">      watcher.<span class="title function_">update</span>(newState, oldState);</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 更新数据</span></span><br><span class="line">  <span class="title function_">update</span>(<span class="params"><span class="attr">newState</span>: T</span>) &#123;</span><br><span class="line">    <span class="keyword">const</span> oldState = <span class="variable language_">this</span>.<span class="property">state</span>;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">state</span> = newState;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="title function_">notify</span>(newState, oldState);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 观察者类</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Watcher</span>&lt;T&gt; &#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="attr">subscribe</span>: <span class="function">(<span class="params"><span class="attr">newVal</span>: T, <span class="attr">oldVal</span>: T</span>) =&gt;</span> <span class="built_in">void</span>;</span><br><span class="line"></span><br><span class="line">  <span class="title function_">constructor</span>(<span class="params"><span class="attr">subscribe</span>: (newVal: T, oldVal: T) =&gt; <span class="built_in">void</span></span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">subscribe</span> = subscribe;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 更新时执行回调</span></span><br><span class="line">  <span class="title function_">update</span>(<span class="params"><span class="attr">newVal</span>: T, <span class="attr">oldVal</span>: T</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (newVal !== oldVal) &#123;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="title function_">subscribe</span>(newVal, oldVal);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="从观察者模式到Zustand"><a href="#从观察者模式到Zustand" class="headerlink" title="从观察者模式到Zustand"></a>从观察者模式到Zustand</h2><p>Zustand 的状态管理可以看作是<strong>观察者模式的最佳实践</strong>。它通过 store 持有应用状态，并提供 subscribe 方法供组件订阅变化，从而<strong>将状态管理逻辑和框架层面逻辑进行分离</strong>，<br>为了更好地理解 Zustand 的实现原理，我们通过以下代码进行深度探索。</p>
+<h3 id="Zustand-整体逻辑架构图"><a href="#Zustand-整体逻辑架构图" class="headerlink" title="Zustand 整体逻辑架构图"></a>Zustand 整体逻辑架构图</h3><p><img src="https://p0-xtjj-private.juejin.cn/tos-cn-i-73owjymdk6/7f29cfb6772d48fbb9312d6edccb6f57~tplv-73owjymdk6-jj-mark-v1:0:0:0:0:5o6Y6YeR5oqA5pyv56S-5Yy6IEAg54ix5aW95oi35aSW55qE5YmN56uv:q75.awebp?policy=eyJ2bSI6MywidWlkIjoiMjc1MjgzMjg0ODUzODc4MiJ9&rk3s=f64ab15b&x-orig-authkey=f32326d3454f2ac7e96d3d06cdbb035152127018&x-orig-expires=1729142766&x-orig-sign=fVU2PQS2xEcocexkxFJ+OGuu+qA=" alt="image-1.png"></p>
+<ul>
+<li>Store: 核心状态管理对象</li>
+<li>Subject: 当状态改变时通知所有订阅者</li>
+<li>Watcher: 观察并监听状态变化</li>
+<li>useStore: React 组件与 Zustand 交互的桥梁</li>
+</ul>
+<h4 id="实现-Store"><a href="#实现-Store" class="headerlink" title="实现 Store"></a>实现 Store</h4><p>Store 是状态管理的核心，它持有应用的状态，并通过 setState 方法来更新状态。<strong>当状态发生变化时，所有注册的观察者都会收到通知</strong>，并执行相应的操作</p>
+<ul>
+<li>state: 当前状态</li>
+<li>getState: 获取当前状态</li>
+<li>setState: 修改改变状态</li>
+<li>subscribe: 创建一个观察者 并监听状态变化</li>
+<li></li>
+</ul>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Store</span>&lt;T&gt; &#123;</span><br><span class="line">  <span class="keyword">private</span> <span class="attr">subject</span>: <span class="title class_">Subject</span>&lt;T&gt;;</span><br><span class="line">  <span class="attr">state</span>: T;</span><br><span class="line"></span><br><span class="line">  <span class="title function_">constructor</span>(<span class="params"><span class="attr">state</span>: T</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">subject</span> = <span class="keyword">new</span> <span class="title class_">Subject</span>&lt;T&gt;(state);</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">state</span> = state;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="title function_">getState</span>(): T &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">state</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="title function_">setState</span>(<span class="attr">partial</span>: <span class="title class_">Partial</span>&lt;T&gt;, <span class="attr">replace</span>: <span class="built_in">boolean</span> = <span class="literal">false</span>): <span class="built_in">void</span> &#123;</span><br><span class="line">    <span class="keyword">const</span> oldState = <span class="variable language_">this</span>.<span class="property">state</span>;</span><br><span class="line">    <span class="keyword">const</span> newState = <span class="keyword">typeof</span> partial === <span class="string">&#x27;function&#x27;</span> ? (partial <span class="keyword">as</span> <span class="title class_">Function</span>)(<span class="variable language_">this</span>.<span class="property">state</span>) : partial;</span><br><span class="line">    <span class="keyword">if</span> (<span class="title class_">Object</span>.<span class="title function_">is</span>(newState, oldState)) <span class="keyword">return</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (replace) &#123;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="property">state</span> = newState <span class="keyword">as</span> T;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="property">state</span> = &#123; ...oldState, ...newState &#125; <span class="keyword">as</span> T;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">subject</span>.<span class="title function_">update</span>(<span class="variable language_">this</span>.<span class="property">state</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="title function_">subscribe</span>(<span class="attr">callback</span>: <span class="function">(<span class="params"><span class="attr">newState</span>: T, <span class="attr">oldState</span>: T</span>) =&gt;</span> <span class="built_in">void</span>): <span class="function">() =&gt;</span> <span class="built_in">void</span> &#123;</span><br><span class="line">    <span class="keyword">const</span> watcher = <span class="keyword">new</span> <span class="title class_">Watcher</span>&lt;T&gt;(callback);</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">subject</span>.<span class="title function_">register</span>(watcher);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="function">() =&gt;</span> &#123;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="property">subject</span>.<span class="title function_">remove</span>(watcher);</span><br><span class="line">    &#125;;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="实现createStore"><a href="#实现createStore" class="headerlink" title="实现createStore"></a>实现createStore</h4><p>createStore 函数负责创建 store 实例并提供给其他外界组件库使用的</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> createStore&lt;T&gt;(callback) &#123;</span><br><span class="line"> <span class="keyword">const</span> store = <span class="keyword">new</span> <span class="title class_">Store</span>&lt;T&gt;();</span><br><span class="line"> store.<span class="property">state</span> = <span class="title function_">callback</span>(store.<span class="property">setState</span>, store.<span class="property">getState</span>, store.<span class="property">subscribe</span>, store.<span class="property">removeState</span>);</span><br><span class="line"><span class="keyword">return</span> (selector?): <span class="title class_">ReturnType</span>&lt;<span class="keyword">typeof</span> selector&gt; =&gt;  &#123;</span><br><span class="line">   <span class="keyword">return</span> <span class="title function_">useStore</span>(store, selector);</span><br><span class="line"> &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="useStore"><a href="#useStore" class="headerlink" title="useStore"></a>useStore</h4><h5 id="实现一-useSyncExternalStore"><a href="#实现一-useSyncExternalStore" class="headerlink" title="实现一  useSyncExternalStore"></a>实现一  useSyncExternalStore</h5><p><strong>useStore是react与zustand之间的桥梁</strong>。通过订阅 store 的变化，组件在状态更新时可以自动重新渲染</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> useStore&lt;T&gt;(<span class="attr">store</span>: <span class="title class_">Store</span>&lt;T&gt;): T;</span><br><span class="line"><span class="keyword">function</span> useStore&lt;T&gt;(<span class="attr">store</span>: <span class="title class_">Store</span>&lt;T&gt;, selector) : <span class="title class_">ReturnType</span>&lt;<span class="keyword">typeof</span> selector&gt;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> useStore&lt;T&gt;(<span class="attr">store</span>: <span class="title class_">Store</span>&lt;T&gt;, selector?: <span class="built_in">unknown</span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> <span class="title function_">getSnapshot</span> = (<span class="params"></span>) =&gt; ( <span class="keyword">typeof</span> selector === <span class="string">&#x27;function&#x27;</span> ? <span class="title function_">selector</span>(store.<span class="title function_">getState</span>()) : store.<span class="title function_">getState</span>());</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> <span class="title function_">useSyncExternalStore</span>(</span><br><span class="line">    store.<span class="property">subscribe</span>, <span class="comment">// 订阅函数</span></span><br><span class="line">    getSnapshot,                 <span class="comment">// 返回当前状态</span></span><br><span class="line">    getSnapshot                  <span class="comment">// 在服务器渲染中使用相同的快照</span></span><br><span class="line">  );</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h5 id="实现二-useState"><a href="#实现二-useState" class="headerlink" title="实现二 useState"></a>实现二 useState</h5><p>在并发渲染模式下，React 的状态订阅需要更加精确地控制。<strong>不能确保状态的一致性，解决潜在的状态读取滞后问题</strong>，特别是在** React 的并发模式和服务器端渲染（SSR**）中</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> useStore&lt;T&gt;(<span class="attr">store</span>: <span class="title class_">Store</span>&lt;T&gt;, selector?: <span class="built_in">unknown</span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> state = <span class="title function_">useRef</span>();</span><br><span class="line">  <span class="keyword">const</span> selectorFnRef = <span class="title function_">useRef</span>(selector);</span><br><span class="line">  <span class="keyword">const</span> selectorFn = selectorFnRef.<span class="property">current</span>;</span><br><span class="line">  <span class="keyword">const</span> [_,forceUpdate] = <span class="title function_">useState</span>(&#123;&#125;);</span><br><span class="line"></span><br><span class="line">  store.<span class="title function_">subscribe</span>(<span class="function">(<span class="params">newState, oldState</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (<span class="keyword">typeof</span> selectorFn === <span class="string">&#x27;function&#x27;</span>) &#123;</span><br><span class="line">      <span class="keyword">const</span> newValue = <span class="title function_">selectorFn</span>(newState)</span><br><span class="line">      <span class="keyword">const</span> oldValue = <span class="title function_">selectorFn</span>(oldState);</span><br><span class="line">      <span class="keyword">if</span> (newValue !== oldValue) &#123;</span><br><span class="line">        state.<span class="property">current</span> = newValue;</span><br><span class="line">        <span class="title function_">forceUpdate</span>(&#123;&#125;)</span><br><span class="line">      &#125;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    state.<span class="property">current</span> = newState</span><br><span class="line">     <span class="title function_">forceUpdate</span>(&#123;&#125;)</span><br><span class="line">  &#125;</span><br><span class="line">  &#125;)</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> state.<span class="property">current</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h1 id="结束语"><a href="#结束语" class="headerlink" title="结束语"></a>结束语</h1><p>通过本文的介绍，<strong>我们实现了一个基于观察者模式的状态管理系统，并且探讨了 zustand 底层设计的核心思想</strong>。zustand 之所以广受欢迎，正是因为它<strong>简洁的 API 和轻量的设计，避免了不必要的复杂度</strong>，非常适合中小型 React 项目的状态管理需求。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/react-zustand/" rel="tag"># react zustand</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/04/18/beginwork%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B/" rel="prev" title="beginwork核心流程">
+      <i class="fa fa-chevron-left"></i> beginwork核心流程
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%95%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">引言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%AE%E6%A0%87"><span class="nav-number">2.</span> <span class="nav-text">目标</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%82%E5%AF%9F%E8%80%85%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F"><span class="nav-number">3.</span> <span class="nav-text">观察者设计模式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8E%E8%A7%82%E5%AF%9F%E8%80%85%E6%A8%A1%E5%BC%8F%E5%88%B0Zustand"><span class="nav-number">4.</span> <span class="nav-text">从观察者模式到Zustand</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Zustand-%E6%95%B4%E4%BD%93%E9%80%BB%E8%BE%91%E6%9E%B6%E6%9E%84%E5%9B%BE"><span class="nav-number">4.1.</span> <span class="nav-text">Zustand 整体逻辑架构图</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0-Store"><span class="nav-number">4.1.1.</span> <span class="nav-text">实现 Store</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0createStore"><span class="nav-number">4.1.2.</span> <span class="nav-text">实现createStore</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#useStore"><span class="nav-number">4.1.3.</span> <span class="nav-text">useStore</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E4%B8%80-useSyncExternalStore"><span class="nav-number">4.1.3.1.</span> <span class="nav-text">实现一  useSyncExternalStore</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E4%BA%8C-useState"><span class="nav-number">4.1.3.2.</span> <span class="nav-text">实现二 useState</span></a></li></ol></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%93%E6%9D%9F%E8%AF%AD"><span class="nav-number"></span> <span class="nav-text">结束语</span></a></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">朱广龙</p>
+  <div class="site-description" itemprop="description">定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">朱广龙</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

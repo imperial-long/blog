@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="本文主要讲vue的响应式系统如何实现，在实现过程中我们也会遇到一些问题比如如何避免无限递归，副作用函数的嵌套，两个副作用函数之间会产生哪些影响等首先在认识vue等响应式系统之前我们先要了解函数的副作用 函数的副作用函数副作用指的是函数在执行过程中对程序状态或外部环境造成的改变。通常，函数应该是一种纯函数，即给定相同的输入，总是返回相同的输出，而且不会对程序状态产生任何影响。但是，有些函数会产生副作">
+<meta property="og:type" content="article">
+<meta property="og:title" content="vu3响应式实现（1）">
+<meta property="og:url" content="http://example.com/2024/02/06/vu3%E5%93%8D%E5%BA%94%E5%BC%8F%E5%AE%9E%E7%8E%B01/index.html">
+<meta property="og:site_name" content="朱广龙的个人博客">
+<meta property="og:description" content="本文主要讲vue的响应式系统如何实现，在实现过程中我们也会遇到一些问题比如如何避免无限递归，副作用函数的嵌套，两个副作用函数之间会产生哪些影响等首先在认识vue等响应式系统之前我们先要了解函数的副作用 函数的副作用函数副作用指的是函数在执行过程中对程序状态或外部环境造成的改变。通常，函数应该是一种纯函数，即给定相同的输入，总是返回相同的输出，而且不会对程序状态产生任何影响。但是，有些函数会产生副作">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/2a68de4e69fe4c178f2efd8ea821de3a~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1140&h=922&s=47738&e=png&b=18151e">
+<meta property="og:image" content="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/13ba2f33a7134aa0afc81b944f3baa6e~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=998&h=954&s=37612&e=png&b=18151e">
+<meta property="og:image" content="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/643a560e43b94420ac255fa15a2f27d1~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=984&h=910&s=38164&e=png&b=18151e">
+<meta property="og:image" content="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/9722048c5308427a8531f09dc79f1064~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=982&h=808&s=31142&e=png&b=19161f">
+<meta property="og:image" content="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/34641c61163341cea6fba565fe93a834~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1022&h=824&s=37388&e=png&b=19161f">
+<meta property="og:image" content="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/92b9070790ed423b8ed27eb51d3134bc~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1164&h=732&s=35990&e=png&b=17141d">
+<meta property="article:published_time" content="2024-02-06T12:39:00.000Z">
+<meta property="article:modified_time" content="2024-10-10T05:18:16.131Z">
+<meta property="article:author" content="朱广龙">
+<meta property="article:tag" content="vue">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/2a68de4e69fe4c178f2efd8ea821de3a~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1140&h=922&s=47738&e=png&b=18151e">
+
+<link rel="canonical" href="http://example.com/2024/02/06/vu3%E5%93%8D%E5%BA%94%E5%BC%8F%E5%AE%9E%E7%8E%B01/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>vu3响应式实现（1） | 朱广龙的个人博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">朱广龙的个人博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/02/06/vu3%E5%93%8D%E5%BA%94%E5%BC%8F%E5%AE%9E%E7%8E%B01/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="朱广龙">
+      <meta itemprop="description" content="定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="朱广龙的个人博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          vu3响应式实现（1）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2024-02-06 20:39:00" itemprop="dateCreated datePublished" datetime="2024-02-06T20:39:00+08:00">2024-02-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2024-10-10 13:18:16" itemprop="dateModified" datetime="2024-10-10T13:18:16+08:00">2024-10-10</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>本文主要讲vue的响应式系统如何实现，在实现过程中我们也会遇到一些问题比如如何避免无限递归，副作用函数的嵌套，两个副作用函数之间会产生哪些影响等首先在认识vue等响应式系统之前我们先要了解函数的副作用</p>
+<h2 id="函数的副作用"><a href="#函数的副作用" class="headerlink" title="函数的副作用"></a>函数的副作用</h2><p>函数副作用指的是函数在执行过程中对程序状态或外部环境造成的改变。通常，函数应该是一种纯函数，即给定相同的输入，总是返回相同的输出，而且不会对程序状态产生任何影响。但是，有些函数会产生副作用，这意味着它们除了返回一个值之外，还会执行其他操作，例如修改全局变量、写入文件、发送网络请求等</p>
+<p>我们来看几个个函数副作用的例子</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// 案例一</span></span><br><span class="line"><span class="keyword">const</span> obj = &#123; <span class="attr">name</span>: <span class="string">&#x27;vue&#x27;</span> &#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">setName</span>(<span class="params"></span>)&#123;</span><br><span class="line"> obj.<span class="property">name</span> = <span class="string">&#x27;react&#x27;</span>;  <span class="comment">// 函数修改了外部变量obj的值</span></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">//案例二</span></span><br><span class="line"><span class="keyword">import</span> &#123; readfile, writefile &#125; <span class="keyword">from</span> <span class="string">&#x27;fs&#x27;</span>;</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">copy</span>(<span class="params">source, tagrget</span>) &#123;</span><br><span class="line">  <span class="title function_">readfile</span>(source, <span class="function">(<span class="params">err, data</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">if</span> (err) &#123;</span><br><span class="line">      <span class="variable language_">console</span>.<span class="title function_">log</span>(data)</span><br><span class="line">     &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="title function_">writefile</span>(target)</span><br><span class="line">     &#125;</span><br><span class="line"> &#125;)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 案例三</span></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">effect</span>(<span class="params">text</span>) &#123;</span><br><span class="line">  <span class="variable language_">document</span>.<span class="title function_">write</span>(text)</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>经过上面的3个例子大家应该页明白什么是函数的副作用了，函数的副作用其实可以简单的理解为函数在执行过程中对函数以外的外部环境造成了影响</p>
+<h2 id="响应式数据"><a href="#响应式数据" class="headerlink" title="响应式数据"></a>响应式数据</h2><p>它能够自动地对数据的变化作出响应，以便更新与之相关的视图或操作。这种数据模型常常用于构建用户界面、数据流和事件驱动的应用程序，以确保界面和数据的实时同步。</p>
+<p>我们简单的举个例子来理解一下</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> obj = &#123; <span class="attr">text</span>: <span class="string">&#x27;hello react&#x27;</span> &#125;;</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">effect</span>(<span class="params"></span>)&#123;</span><br><span class="line">  <span class="variable language_">document</span>.<span class="property">body</span>.<span class="property">innerHtml</span> = obj.<span class="property">text</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="title function_">efffect</span>();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 当 obj.text 发生改变时我们希望能够重新运行这个副作用函数</span></span><br><span class="line">obj.<span class="property">text</span> = <span class="string">&#x27;hello vue&#x27;</span></span><br></pre></td></tr></table></figure>
+<p>如上面的代码所示，effect函数会设置body元素的innerHtml属性，当obj.text发生改变后我们希望能够重新运行副作用函数</p>
+<p>要是我们能够知道obj.text的值发生改变后，重新运行副作用函数即可以实现</p>
+<h3 id="响应式数据的基本实现"><a href="#响应式数据的基本实现" class="headerlink" title="响应式数据的基本实现"></a>响应式数据的基本实现</h3><p>我们来思考一下，如何才能让obj变为响应式数据呢，我们发现其中有2点至关重要</p>
+<ul>
+<li>当副作用函数effect运行时，会触发obj.text的读取操作</li>
+<li>当修改obj.text会触发 obj.text的操作</li>
+</ul>
+<p>如果我们能拦截到对象obj的读取和设置操作，那么一切都变得简单了，整体流程如图所示</p>
+<p><img src="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/2a68de4e69fe4c178f2efd8ea821de3a~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1140&h=922&s=47738&e=png&b=18151e" alt="image.png"></p>
+<ul>
+<li>当effect函数运行时，我们将effect函数给存起来</li>
+<li>当设置obj.text时我们再将副作用函数从桶中取出来并执行</li>
+</ul>
+<p>那么我们还有一个关键的问题没有解决如何拦截对象的读取草醉呢 我们可以采用proxy来进行拦截</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> obj = &#123; <span class="attr">text</span>: <span class="string">&#x27;hello react&#x27;</span> &#125;;</span><br><span class="line"><span class="keyword">const</span> proxyObj = <span class="keyword">new</span> <span class="title class_">Proxy</span>(obj, &#123;</span><br><span class="line">  <span class="comment">// 拦截对象属性读取操作</span></span><br><span class="line">  <span class="title function_">get</span>(<span class="params">target, key, receiver</span>) &#123;</span><br><span class="line">   <span class="keyword">return</span> <span class="title class_">Reflect</span>.<span class="title function_">get</span>(target, key, receiver)</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="comment">// 拦截对象属性的设置操作</span></span><br><span class="line">  <span class="title function_">set</span>(<span class="params">target, key, value, receiver</span>) &#123;</span><br><span class="line">   <span class="keyword">return</span> <span class="title class_">Reflect</span>.<span class="title function_">set</span>(target, key, value, receiver)</span><br><span class="line"> &#125;,</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>有了上述这段代码我们也就很好的来实现了上述图片展示的逻辑</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> effects = [];</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">effect</span>(<span class="params"></span>)&#123;</span><br><span class="line"> <span class="variable language_">document</span>.<span class="property">body</span>.<span class="property">innerHtml</span> = obj.<span class="property">text</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 监听对象的读取操作</span></span><br><span class="line"> <span class="keyword">function</span> <span class="title function_">track</span>(<span class="params">target, key</span>)&#123;</span><br><span class="line">   effects.<span class="title function_">push</span>(effect);</span><br><span class="line"> &#125;</span><br><span class="line"> </span><br><span class="line"> <span class="comment">// 对象设置触发的操作</span></span><br><span class="line"> <span class="keyword">function</span> <span class="title function_">trigger</span>(<span class="params">target, key, value</span>)&#123;</span><br><span class="line">   effects.<span class="title function_">forEach</span>(<span class="function"><span class="params">effect</span> =&gt;</span> <span class="title function_">effect</span>())</span><br><span class="line"> &#125;</span><br><span class="line"> </span><br><span class="line"> <span class="keyword">const</span> obj = &#123; <span class="attr">text</span>: <span class="string">&#x27;hello react&#x27;</span> &#125;;</span><br><span class="line"> <span class="keyword">const</span> proxyObj = <span class="keyword">new</span> <span class="title class_">Proxy</span>(obj, &#123;</span><br><span class="line">   <span class="comment">// 拦截对象属性读取操作</span></span><br><span class="line">   <span class="title function_">get</span>(<span class="params">target, key, receiver</span>) &#123;</span><br><span class="line">     <span class="title function_">track</span>(target, key);</span><br><span class="line">    <span class="keyword">return</span> <span class="title class_">Reflect</span>.<span class="title function_">get</span>(target, key, receiver)</span><br><span class="line">   &#125;,</span><br><span class="line">   <span class="comment">// 拦截对象属性的设置操作</span></span><br><span class="line">   <span class="title function_">set</span>(<span class="params">target, key, value, receiver</span>) &#123;</span><br><span class="line">    <span class="title function_">trigger</span>(target, key);</span><br><span class="line">    <span class="keyword">return</span> <span class="title class_">Reflect</span>.<span class="title function_">set</span>(target, key, value, receiver)</span><br><span class="line">  &#125;,</span><br><span class="line"> &#125;)</span><br><span class="line"> </span><br><span class="line"> <span class="title function_">effect</span>();</span><br><span class="line"> </span><br><span class="line"> <span class="title class_">Promise</span>.<span class="title function_">resovle</span>().<span class="title function_">then</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">  obj.<span class="property">text</span> = <span class="string">&#x27;hello vue&#x27;</span>;</span><br><span class="line"> &#125;)</span><br><span class="line"> </span><br></pre></td></tr></table></figure>
+
+<p>目前的实现存在很多缺陷，例如我们直接通过函数名字来获取副作用，以及会重复监听等问题，在下面一小节我们将着重来解决以上问题</p>
+<h2 id="完善的响应式系统"><a href="#完善的响应式系统" class="headerlink" title="完善的响应式系统"></a>完善的响应式系统</h2><p>现在我们将来完善一下上述实现的响应式系统，通过本章学习将学习到如何构建完美的响应式系统</p>
+<p>我们先来实现注册副作用函数部分</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> activeEffect = <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">effect</span>(<span class="params">fn</span>) &#123;</span><br><span class="line">  activeEffect = fn;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>接下来改造响应式数据部分</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 监听对象的读取操作</span></span><br><span class="line"> <span class="keyword">function</span> <span class="title function_">track</span>(<span class="params">target, key</span>)&#123;</span><br><span class="line">   effects.<span class="title function_">push</span>(activeEffect);</span><br><span class="line"> &#125;</span><br><span class="line"> </span><br><span class="line"> <span class="comment">// 对象设置触发的操作</span></span><br><span class="line"> <span class="keyword">function</span> <span class="title function_">trigger</span>(<span class="params">target, key, value</span>)&#123;</span><br><span class="line">   effects.<span class="title function_">forEach</span>(<span class="function"><span class="params">effect</span> =&gt;</span> <span class="title function_">effect</span>())</span><br><span class="line"> &#125;</span><br><span class="line"> </span><br><span class="line"> <span class="keyword">const</span> obj = &#123; <span class="attr">text</span>: <span class="string">&#x27;hello react&#x27;</span> &#125;;</span><br><span class="line"> <span class="keyword">const</span> proxyObj = <span class="keyword">new</span> <span class="title class_">Proxy</span>(obj, &#123;</span><br><span class="line">   <span class="comment">// 拦截对象属性读取操作</span></span><br><span class="line">   <span class="title function_">get</span>(<span class="params">target, key, receiver</span>) &#123;</span><br><span class="line">     <span class="title function_">track</span>(target, key);</span><br><span class="line">    <span class="keyword">return</span> <span class="title class_">Reflect</span>.<span class="title function_">get</span>(target, key, receiver)</span><br><span class="line">   &#125;,</span><br><span class="line">   <span class="comment">// 拦截对象属性的设置操作</span></span><br><span class="line">   <span class="title function_">set</span>(<span class="params">target, key, value, receiver</span>) &#123;</span><br><span class="line">    <span class="title function_">trigger</span>(target, key);</span><br><span class="line">    <span class="keyword">return</span> <span class="title class_">Reflect</span>.<span class="title function_">set</span>(target, key, value, receiver)</span><br><span class="line">  &#125;,</span><br><span class="line"> &#125;)</span><br></pre></td></tr></table></figure>
+<p>经过上述改造我们再来看另外一个问题</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> obj = &#123; <span class="attr">foo</span>: <span class="string">&#x27;foo&#x27;</span>, <span class="attr">bar</span>: <span class="string">&#x27;bar&#x27;</span> &#125;;</span><br><span class="line"><span class="title function_">effect</span>(<span class="function">() =&gt;</span> &#123; <span class="variable language_">console</span>.<span class="title function_">log</span>(obj.<span class="property">foo</span>) &#125; );</span><br><span class="line">obj.<span class="property">bar</span> = <span class="string">&#x27;hello&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>我们发现当我们将obj.bar设置为hello，惊奇的发现副作用函数竟然运行了，其实我们希望副作用函数不应该运行</p>
+<p>我们再来看一个例子</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">const</span> obj = &#123; <span class="attr">foo</span>: <span class="string">&#x27;foo&#x27;</span>, <span class="attr">bar</span>: <span class="string">&#x27;bar&#x27;</span> &#125;;</span><br><span class="line"> <span class="keyword">function</span> <span class="title function_">innerEffect</span>(<span class="params"></span>)&#123;</span><br><span class="line">   <span class="variable language_">console</span>.<span class="title function_">log</span>(obj,foo);</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="title function_">effect</span>(innerEffect);</span><br><span class="line">  <span class="title function_">effect</span>(innerEffect);</span><br><span class="line">  </span><br><span class="line">obj.<span class="property">bar</span> = <span class="string">&#x27;hello&#x27;</span>;</span><br></pre></td></tr></table></figure>
+
+<p>我们发现当effect传入的2个函数相同时，发现副作用函数运行了2次，其实这里我们更多的希望是能够运行一次</p>
+<p>我们再来看一个例子</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">const</span> obj = &#123; <span class="attr">text</span>: <span class="string">&#x27;hello react&#x27;</span> &#125;;</span><br><span class="line"> <span class="keyword">const</span> obj1 = &#123; <span class="attr">text</span>: <span class="string">&#x27;hello react1&#x27;</span> &#125;;</span><br><span class="line"> </span><br><span class="line"> <span class="keyword">const</span> proxyObj = <span class="keyword">new</span> <span class="title class_">Proxy</span>(obj, &#123;</span><br><span class="line">   <span class="comment">// 拦截对象属性读取操作</span></span><br><span class="line">   <span class="title function_">get</span>(<span class="params">target, key, receiver</span>) &#123;</span><br><span class="line">     <span class="title function_">track</span>(target, key);</span><br><span class="line">    <span class="keyword">return</span> <span class="title class_">Reflect</span>.<span class="title function_">get</span>(target, key, receiver)</span><br><span class="line">   &#125;,</span><br><span class="line">   <span class="comment">// 拦截对象属性的设置操作</span></span><br><span class="line">   <span class="title function_">set</span>(<span class="params">target, key, value, receiver</span>) &#123;</span><br><span class="line">    <span class="title function_">trigger</span>(target, key);</span><br><span class="line">    <span class="keyword">return</span> <span class="title class_">Reflect</span>.<span class="title function_">set</span>(target, key, value, receiver)</span><br><span class="line">  &#125;,</span><br><span class="line"> &#125;)</span><br><span class="line"> </span><br><span class="line"> <span class="keyword">const</span> proxyObj1 = <span class="keyword">new</span> <span class="title class_">Proxy</span>(obj1, &#123;</span><br><span class="line">   <span class="comment">// 拦截对象属性读取操作</span></span><br><span class="line">   <span class="title function_">get</span>(<span class="params">target, key, receiver</span>) &#123;</span><br><span class="line">     <span class="title function_">track</span>(target, key);</span><br><span class="line">    <span class="keyword">return</span> <span class="title class_">Reflect</span>.<span class="title function_">get</span>(target, key, receiver)</span><br><span class="line">   &#125;,</span><br><span class="line">   <span class="comment">// 拦截对象属性的设置操作</span></span><br><span class="line">   <span class="title function_">set</span>(<span class="params">target, key, value, receiver</span>) &#123;</span><br><span class="line">    <span class="title function_">trigger</span>(target, key);</span><br><span class="line">    <span class="keyword">return</span> <span class="title class_">Reflect</span>.<span class="title function_">set</span>(target, key, value, receiver)</span><br><span class="line">  &#125;,</span><br><span class="line"> &#125;)</span><br><span class="line"> </span><br><span class="line">proxyObj1.<span class="property">text</span> = <span class="string">&#x27;hello vue&#x27;</span></span><br><span class="line"> </span><br></pre></td></tr></table></figure>
+<p>我们发现即使proxyobj没有发生改变，但是还是会运行负副作用函数，主要是因为我们没有进行区分，将副作用和特定的对象进行绑定</p>
+<h3 id="响应式系统的初步实现"><a href="#响应式系统的初步实现" class="headerlink" title="响应式系统的初步实现"></a>响应式系统的初步实现</h3><p>针对上述以上提出的3个问题，通过代以下代码进行解决</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> bucketMap = <span class="keyword">new</span> <span class="title class_">WeakMap</span>() <span class="comment">// 用来区分不同对象的副作用函数</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">track</span>(<span class="params">target, key</span>)&#123;</span><br><span class="line">     <span class="comment">// 没有副作用</span></span><br><span class="line">      <span class="keyword">if</span> (!activeEffect) &#123;</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 根据对象获取对应的副作用map</span></span><br><span class="line">      <span class="keyword">let</span> depsMap = bucketMap.<span class="title function_">get</span>(target);</span><br><span class="line">      <span class="keyword">if</span> (!depsMap) &#123;</span><br><span class="line">        depsMap = <span class="keyword">new</span> <span class="title class_">Map</span>();</span><br><span class="line">        bucketMap.<span class="title function_">set</span>(target, depsMap);</span><br><span class="line">      &#125;</span><br><span class="line">      </span><br><span class="line">      <span class="comment">// 根据key获取对应的副作用集合</span></span><br><span class="line">      <span class="keyword">let</span> effects = depsMap.<span class="title function_">get</span>(key);</span><br><span class="line">      <span class="keyword">if</span> (!effects) &#123;</span><br><span class="line">      </span><br><span class="line">      <span class="comment">// 对副作用函数做去重处理</span></span><br><span class="line">        effects = <span class="keyword">new</span> <span class="title class_">Set</span>();</span><br><span class="line">        depsMap.<span class="title function_">set</span>(key, effects);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      effects.<span class="title function_">add</span>(activeEffect);</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">trigger</span>(<span class="params">target, key, value</span>)&#123; </span><br><span class="line">   <span class="comment">// 根据之前收集到集合的副作用函数来进行执行</span></span><br><span class="line">      <span class="keyword">const</span> depsMap = bucketMap.<span class="title function_">get</span>(target)</span><br><span class="line">      <span class="keyword">if</span> (!depsMap) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">const</span> effects = depsMap.<span class="title function_">get</span>(key);</span><br><span class="line">      effects &amp;&amp; effects.<span class="title function_">forEach</span>(<span class="function"><span class="params">effect</span> =&gt;</span> <span class="title function_">effect</span>());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> obj = <span class="keyword">new</span> <span class="title class_">Proxy</span>(data, &#123;</span><br><span class="line">    <span class="title function_">get</span>(<span class="params">target, key, receiver</span>) &#123;</span><br><span class="line">    <span class="title function_">track</span>(target, key)</span><br><span class="line">      <span class="keyword">return</span> <span class="title class_">Reflect</span>.<span class="title function_">get</span>(target, key, receiver)</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="title function_">set</span>(<span class="params">target, key, value, receiver</span>) &#123;</span><br><span class="line">      <span class="keyword">const</span> result = <span class="title class_">Reflect</span>.<span class="title function_">set</span>(target, key, value, receiver);</span><br><span class="line">      <span class="title function_">trigger</span>(target, key, value);</span><br><span class="line">      <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    &#125;)</span><br><span class="line">  </span><br></pre></td></tr></table></figure>
+<p>将上述代码翻译成以下图片方便于理解，如图所示</p>
+<p><img src="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/13ba2f33a7134aa0afc81b944f3baa6e~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=998&h=954&s=37612&e=png&b=18151e" alt="image.png"></p>
+<h3 id="分支切换与cleanup"><a href="#分支切换与cleanup" class="headerlink" title="分支切换与cleanup"></a>分支切换与cleanup</h3><p>首先我们明确分支切换的定义，如下图代码所示</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> obj = &#123; <span class="attr">isShow</span>: <span class="literal">true</span>, <span class="attr">text</span>: <span class="string">&#x27;hello react&#x27;</span> &#125;;</span><br><span class="line"><span class="title function_">effect</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">  <span class="variable language_">document</span>.<span class="property">body</span>.<span class="property">innerHtml</span> = obj.<span class="property">isShow</span> ? obj.<span class="property">text</span> : <span class="string">&#x27;不显示&#x27;</span></span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>在effect函数内部存在一个三元表达式，根据不同字段执行不同的逻辑，当isshow发生改变时代码执行的分支也会发生改变，这就是所谓的分支切换</p>
+<p>我们来看一看此时副作用函数和响应式之间是怎么样的联系</p>
+<p><img src="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/643a560e43b94420ac255fa15a2f27d1~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=984&h=910&s=38164&e=png&b=18151e" alt="image.png"></p>
+<p>我们再来看一下当将obj.isShow 修改为false时我们期望依赖的收集情况如图所示<br><img src="https://p9-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/9722048c5308427a8531f09dc79f1064~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=982&h=808&s=31142&e=png&b=19161f" alt="image.png"></p>
+<p>但实际的依赖收集情况如图所示</p>
+<p><img src="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/34641c61163341cea6fba565fe93a834~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1022&h=824&s=37388&e=png&b=19161f" alt="image.png"></p>
+<p>我们发现此时text的依赖收集其实不应该有依赖收集情况的，为了解决上述问题，我们每次进行依赖更新的时候都需需要重新收集依赖</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> activeEffect = <span class="literal">null</span>;</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">effect</span>(<span class="params">fn</span>)&#123;</span><br><span class="line">    <span class="comment">// 新增依赖收集</span></span><br><span class="line">     <span class="keyword">const</span> <span class="title function_">innerEffect</span> = (<span class="params"></span>) =&gt; &#123;</span><br><span class="line">     <span class="title function_">cleanup</span>(innerEffect);</span><br><span class="line">     activeEffect = innerEffect;</span><br><span class="line">       <span class="title function_">fn</span>();</span><br><span class="line">     &#125;</span><br><span class="line"> effect.<span class="property">deps</span> = [];</span><br><span class="line"> <span class="title function_">innerEffect</span>()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 清除依赖收集</span></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">cleanup</span>(<span class="params">effectFn</span>)&#123;</span><br><span class="line">  <span class="keyword">const</span> deps = effectFn.<span class="property">deps</span>;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i &lt; deps.<span class="property">length</span>; i++) &#123;</span><br><span class="line">    <span class="keyword">const</span> depSet = deps[i];</span><br><span class="line">    depset.<span class="title function_">delete</span>(effectFn);</span><br><span class="line">  &#125;</span><br><span class="line">  deps.<span class="property">length</span> = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> bucketMap = <span class="keyword">new</span> <span class="title class_">WeakMap</span>() <span class="comment">// 用来区分不同对象的副作用函数</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">track</span>(<span class="params">target, key</span>)&#123;</span><br><span class="line">     <span class="comment">// 没有副作用</span></span><br><span class="line">      <span class="keyword">if</span> (!activeEffect) &#123;</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 根据对象获取对应的副作用map</span></span><br><span class="line">      <span class="keyword">let</span> depsMap = bucketMap.<span class="title function_">get</span>(target);</span><br><span class="line">      <span class="keyword">if</span> (!depsMap) &#123;</span><br><span class="line">        depsMap = <span class="keyword">new</span> <span class="title class_">Map</span>();</span><br><span class="line">        bucketMap.<span class="title function_">set</span>(target, depsMap);</span><br><span class="line">      &#125;</span><br><span class="line">      </span><br><span class="line">      <span class="comment">// 根据key获取对应的副作用集合</span></span><br><span class="line">      <span class="keyword">let</span> effects = depsMap.<span class="title function_">get</span>(key);</span><br><span class="line">      <span class="keyword">if</span> (!effects) &#123;</span><br><span class="line">      </span><br><span class="line">      <span class="comment">// 对副作用函数做去重处理</span></span><br><span class="line">        effects = <span class="keyword">new</span> <span class="title class_">Set</span>();</span><br><span class="line">        depsMap.<span class="title function_">set</span>(key, effects);</span><br><span class="line">        </span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      effects.<span class="title function_">add</span>(activeEffect);</span><br><span class="line">      <span class="comment">// 新增依赖收集</span></span><br><span class="line">      activeEffect.<span class="property">deps</span>.<span class="title function_">push</span>(effects);</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">trigger</span>(<span class="params">target, key, value</span>)&#123; </span><br><span class="line">   <span class="comment">// 根据之前收集到集合的副作用函数来进行执行</span></span><br><span class="line">      <span class="keyword">const</span> depsMap = bucketMap.<span class="title function_">get</span>(target)</span><br><span class="line">      <span class="keyword">if</span> (!depsMap) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">const</span> effects = depsMap.<span class="title function_">get</span>(key);</span><br><span class="line">      </span><br><span class="line">     <span class="comment">// 避免依赖在删除和添加过程中死循环</span></span><br><span class="line">     <span class="keyword">const</span> effectsToRun = <span class="keyword">new</span> <span class="title class_">Set</span>(effects); </span><br><span class="line">     effectsToRun.<span class="title function_">forEach</span>(<span class="function"><span class="params">effect</span> =&gt;</span> <span class="title function_">effect</span>());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> obj = <span class="keyword">new</span> <span class="title class_">Proxy</span>(data, &#123;</span><br><span class="line">    <span class="title function_">get</span>(<span class="params">target, key, receiver</span>) &#123;</span><br><span class="line">    <span class="title function_">track</span>(target, key)</span><br><span class="line">      <span class="keyword">return</span> <span class="title class_">Reflect</span>.<span class="title function_">get</span>(target, key, receiver)</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="title function_">set</span>(<span class="params">target, key, value, receiver</span>) &#123;</span><br><span class="line">      <span class="keyword">const</span> result = <span class="title class_">Reflect</span>.<span class="title function_">set</span>(target, key, value, receiver);</span><br><span class="line">      <span class="title function_">trigger</span>(target, key, value);</span><br><span class="line">      <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    &#125;)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="嵌套的effect和effect函数栈"><a href="#嵌套的effect和effect函数栈" class="headerlink" title="嵌套的effect和effect函数栈"></a>嵌套的effect和effect函数栈</h3><p>   其实在vue中effect是可以嵌套的，主要是因为组件之间时可以发生嵌套的，组件的挂载或者更新其实是发生在effect中的<br>   <figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">effect</span>(<span class="function">() =&gt;</span>&#123;</span><br><span class="line"> <span class="title function_">effect</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">   <span class="title function_">effect</span>();</span><br><span class="line"> &#125;)</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure></p>
+<p>  按照嵌套环境来我们的响应式系统其实并不支持effect嵌套的</p>
+  <figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> bar = <span class="literal">null</span>;</span><br><span class="line"><span class="keyword">let</span> foo = <span class="literal">null</span>;</span><br><span class="line"><span class="title function_">effect</span>(<span class="function">() =&gt;</span>&#123;</span><br><span class="line">    <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;effect1&#x27;</span>);</span><br><span class="line">    <span class="title function_">effecct</span>(<span class="function">() =&gt;</span>&#123;</span><br><span class="line">     <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;effect2&#x27;</span>);</span><br><span class="line">     bar = obj.<span class="property">bar</span>;</span><br><span class="line">    &#125;)</span><br><span class="line">    foo = obj.<span class="property">foo</span>;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>  我们发现上述代码共执行3次，第一次是执行effect1， 第二次是执行effect2, 第三次执行是effect2<br>  按照正常逻辑我们其实是希望执行effect1,因为我们是在外层执行obj.foo的，这显然和我们期望的结果是   违背的，为了解决上面问题，我们需要来分析effect执行的情况是怎么样的，在探讨effect是如何执行的我们需要先搞清一个东西那就是函数执行栈</p>
+<h3 id="函数的执行栈"><a href="#函数的执行栈" class="headerlink" title="函数的执行栈"></a>函数的执行栈</h3><p>  函数执行栈（Function Call Stack），通常简称为执行栈，是计算机程序执行函数调用和返回的一种数据结构。它以栈（stack）的形式组织函数调用的顺序，遵循后进先出（Last-In, First-Out，LIFO）的原则。执行栈在程序运行中起着重要的作用，用于跟踪函数调用的层次和控制程序的执行流程</p>
+<table>
+<thead>
+<tr>
+<th>特点</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>函数调用顺序</td>
+<td>函数按照调用顺序依次推入执行栈的顶部，维护函数调用的堆栈。</td>
+</tr>
+<tr>
+<td>函数执行</td>
+<td>执行栈中的函数被处理，包括变量分配、操作执行和其他操作。</td>
+</tr>
+<tr>
+<td>返回值</td>
+<td>函数执行完成后，从执行栈中弹出，并将返回值传递给调用者函数。</td>
+</tr>
+<tr>
+<td>嵌套调用</td>
+<td>如果函数内部调用其他函数，新函数被推入执行栈，直到执行完毕返回。</td>
+</tr>
+<tr>
+<td>递归</td>
+<td>递归函数会多次调用自身，导致多个函数调用堆叠在执行栈中。</td>
+</tr>
+<tr>
+<td>栈溢出</td>
+<td>如果执行栈变得过大，可能导致栈溢出错误。</td>
+</tr>
+</tbody></table>
+<p>结合函数执行栈我们来分析effect的整个执行过程如图所示</p>
+<p><img src="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/92b9070790ed423b8ed27eb51d3134bc~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1164&h=732&s=35990&e=png&b=17141d" alt="image.png"></p>
+<ul>
+<li>在执行effect1时将effect1放入栈中</li>
+<li>在执行effect2时将effect2放入栈中</li>
+<li>函数压栈完毕</li>
+<li>effect2执行完毕将effect2从栈中弹出</li>
+<li>effect1执行完毕将effect1从栈中弹出</li>
+</ul>
+<p>根据上述规律我们也受到了启发，我们是否能够将activeEffect和effect对应的执行栈一一对应，是不是就能解决effect嵌套问题了呢</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> activeEffect = <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// activeEffect执行栈</span></span><br><span class="line"><span class="keyword">const</span> activeEffectStack = [];</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">effect</span>(<span class="params">fn</span>)&#123;</span><br><span class="line">    <span class="comment">// 新增依赖收集</span></span><br><span class="line">     <span class="keyword">const</span> <span class="title function_">innerEffect</span> = (<span class="params"></span>) =&gt; &#123;</span><br><span class="line">     <span class="title function_">cleanup</span>(innerEffect);</span><br><span class="line">     activeEffect = innerEffect;</span><br><span class="line">     </span><br><span class="line">     <span class="comment">//新增 将activeEffect入栈</span></span><br><span class="line">     activeEffectStack.<span class="title function_">push</span>(activeEffect);</span><br><span class="line">       <span class="title function_">fn</span>();</span><br><span class="line">      <span class="comment">// 新增 将activeEffect出栈</span></span><br><span class="line">      activeEffectStack.<span class="title function_">pop</span>();</span><br><span class="line">      </span><br><span class="line">      <span class="comment">// 新增 取出栈顶元素</span></span><br><span class="line">      activeEffect =  activeEffectStack[activeEffectStack.<span class="property">length</span> - <span class="number">1</span>];</span><br><span class="line">  </span><br><span class="line">     &#125;</span><br><span class="line"> effect.<span class="property">deps</span> = [];</span><br><span class="line"> <span class="title function_">innerEffect</span>()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 清除依赖收集</span></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">cleanup</span>(<span class="params">effectFn</span>)&#123;</span><br><span class="line">  <span class="keyword">const</span> deps = effectFn.<span class="property">deps</span>;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i &lt; deps.<span class="property">length</span>; i++) &#123;</span><br><span class="line">    <span class="keyword">const</span> depSet = deps[i];</span><br><span class="line">    depset.<span class="title function_">delete</span>(effectFn);</span><br><span class="line">  &#125;</span><br><span class="line">  deps.<span class="property">length</span> = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> bucketMap = <span class="keyword">new</span> <span class="title class_">WeakMap</span>() <span class="comment">// 用来区分不同对象的副作用函数</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">track</span>(<span class="params">target, key</span>)&#123;</span><br><span class="line">     <span class="comment">// 没有副作用</span></span><br><span class="line">      <span class="keyword">if</span> (!activeEffect) &#123;</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="comment">// 根据对象获取对应的副作用map</span></span><br><span class="line">      <span class="keyword">let</span> depsMap = bucketMap.<span class="title function_">get</span>(target);</span><br><span class="line">      <span class="keyword">if</span> (!depsMap) &#123;</span><br><span class="line">        depsMap = <span class="keyword">new</span> <span class="title class_">Map</span>();</span><br><span class="line">        bucketMap.<span class="title function_">set</span>(target, depsMap);</span><br><span class="line">      &#125;</span><br><span class="line">      </span><br><span class="line">      <span class="comment">// 根据key获取对应的副作用集合</span></span><br><span class="line">      <span class="keyword">let</span> effects = depsMap.<span class="title function_">get</span>(key);</span><br><span class="line">      <span class="keyword">if</span> (!effects) &#123;</span><br><span class="line">      </span><br><span class="line">      <span class="comment">// 对副作用函数做去重处理</span></span><br><span class="line">        effects = <span class="keyword">new</span> <span class="title class_">Set</span>();</span><br><span class="line">        depsMap.<span class="title function_">set</span>(key, effects);</span><br><span class="line">        </span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      effects.<span class="title function_">add</span>(activeEffect);</span><br><span class="line">      <span class="comment">// 新增依赖收集</span></span><br><span class="line">      activeEffect.<span class="property">deps</span>.<span class="title function_">push</span>(effects);</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">trigger</span>(<span class="params">target, key, value</span>)&#123; </span><br><span class="line">   <span class="comment">// 根据之前收集到集合的副作用函数来进行执行</span></span><br><span class="line">      <span class="keyword">const</span> depsMap = bucketMap.<span class="title function_">get</span>(target)</span><br><span class="line">      <span class="keyword">if</span> (!depsMap) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">const</span> effects = depsMap.<span class="title function_">get</span>(key);</span><br><span class="line">      </span><br><span class="line">     <span class="comment">// 避免依赖在删除和添加过程中死循环</span></span><br><span class="line">     <span class="keyword">const</span> effectsToRun = <span class="keyword">new</span> <span class="title class_">Set</span>(effects); </span><br><span class="line">     effectsToRun.<span class="title function_">forEach</span>(<span class="function"><span class="params">effect</span> =&gt;</span> <span class="title function_">effect</span>());</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> obj = <span class="keyword">new</span> <span class="title class_">Proxy</span>(data, &#123;</span><br><span class="line">    <span class="title function_">get</span>(<span class="params">target, key, receiver</span>) &#123;</span><br><span class="line">    <span class="title function_">track</span>(target, key)</span><br><span class="line">      <span class="keyword">return</span> <span class="title class_">Reflect</span>.<span class="title function_">get</span>(target, key, receiver)</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="title function_">set</span>(<span class="params">target, key, value, receiver</span>) &#123;</span><br><span class="line">      <span class="keyword">const</span> result = <span class="title class_">Reflect</span>.<span class="title function_">set</span>(target, key, value, receiver);</span><br><span class="line">      <span class="title function_">trigger</span>(target, key, value);</span><br><span class="line">      <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    &#125;)</span><br></pre></td></tr></table></figure>
+<h3 id="无限递归循环"><a href="#无限递归循环" class="headerlink" title="无限递归循环"></a>无限递归循环</h3><p>我们还剩余最后一个细节需要考虑，那就是无限递归的情况，我们来思考以下这段代码</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> obj= &#123; <span class="attr">count</span>: <span class="number">0</span> &#125;;</span><br><span class="line"><span class="title function_">effect</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line"> obj.<span class="property">count</span>++;</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+<p>我们发现这段代码会导致死循环，主要是因为即读取了obj.count 又设置了obj.count 这样就会导致无限递归调用自己，解决办法也不是很难，我们只要在trigger函数里进行判断是不是自己调用自己</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"> </span><br><span class="line"><span class="keyword">function</span> <span class="title function_">trigger</span>(<span class="params">target, key, value</span>)&#123; </span><br><span class="line">   <span class="comment">// 根据之前收集到集合的副作用函数来进行执行</span></span><br><span class="line">      <span class="keyword">const</span> depsMap = bucketMap.<span class="title function_">get</span>(target)</span><br><span class="line">      <span class="keyword">if</span> (!depsMap) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">const</span> effects = depsMap.<span class="title function_">get</span>(key);</span><br><span class="line">      </span><br><span class="line">     <span class="comment">// 避免依赖在删除和添加过程中死循环</span></span><br><span class="line">     <span class="keyword">const</span> effectsToRun = <span class="keyword">new</span> <span class="title class_">Set</span>(effects); </span><br><span class="line">     effectsToRun.<span class="title function_">forEach</span>(<span class="function"><span class="params">effect</span> =&gt;</span> &#123;</span><br><span class="line">     </span><br><span class="line">       <span class="comment">//新增 自己调用自己时进行拦截</span></span><br><span class="line">       <span class="keyword">if</span> (activeEffect !== effect)&#123;</span><br><span class="line">         <span class="title function_">effect</span>();</span><br><span class="line">       &#125;</span><br><span class="line">     &#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>根据以上几个问题的优化我们给出下面的最终代码</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">let</span> activeEffect = <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// activeEffect执行栈</span></span><br><span class="line"><span class="keyword">const</span> activeEffectStack = [];</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">effect</span>(<span class="params">fn</span>)&#123;</span><br><span class="line">     <span class="keyword">const</span> <span class="title function_">innerEffect</span> = (<span class="params"></span>) =&gt; &#123;</span><br><span class="line">         <span class="title function_">cleanup</span>(innerEffect);</span><br><span class="line">         activeEffect = innerEffect;</span><br><span class="line">    </span><br><span class="line">         activeEffectStack.<span class="title function_">push</span>(activeEffect);</span><br><span class="line">         <span class="title function_">fn</span>();</span><br><span class="line">      </span><br><span class="line">         activeEffectStack.<span class="title function_">pop</span>();</span><br><span class="line">         activeEffect =  activeEffectStack[activeEffectStack.<span class="property">length</span> - <span class="number">1</span>];</span><br><span class="line">  </span><br><span class="line">     &#125;</span><br><span class="line"> effect.<span class="property">deps</span> = [];</span><br><span class="line"> <span class="title function_">innerEffect</span>()</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 清除依赖收集</span></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">cleanup</span>(<span class="params">effectFn</span>)&#123;</span><br><span class="line">  <span class="keyword">const</span> deps = effectFn.<span class="property">deps</span>;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i &lt; deps.<span class="property">length</span>; i++) &#123;</span><br><span class="line">    <span class="keyword">const</span> depSet = deps[i];</span><br><span class="line">    depset.<span class="title function_">delete</span>(effectFn);</span><br><span class="line">  &#125;</span><br><span class="line">  deps.<span class="property">length</span> = <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> bucketMap = <span class="keyword">new</span> <span class="title class_">WeakMap</span>() <span class="comment">// 用来区分不同对象的副作用函数</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">track</span>(<span class="params">target, key</span>)&#123;</span><br><span class="line">      <span class="keyword">if</span> (!activeEffect) &#123;</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line">      &#125;</span><br><span class="line">      </span><br><span class="line">      <span class="keyword">let</span> depsMap = bucketMap.<span class="title function_">get</span>(target);</span><br><span class="line">      <span class="keyword">if</span> (!depsMap) &#123;</span><br><span class="line">        depsMap = <span class="keyword">new</span> <span class="title class_">Map</span>();</span><br><span class="line">        bucketMap.<span class="title function_">set</span>(target, depsMap);</span><br><span class="line">      &#125;</span><br><span class="line">      </span><br><span class="line">      <span class="keyword">let</span> effects = depsMap.<span class="title function_">get</span>(key);</span><br><span class="line">      <span class="keyword">if</span> (!effects) &#123;</span><br><span class="line">      </span><br><span class="line">        effects = <span class="keyword">new</span> <span class="title class_">Set</span>();</span><br><span class="line">        depsMap.<span class="title function_">set</span>(key, effects);</span><br><span class="line">        </span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      effects.<span class="title function_">add</span>(activeEffect);</span><br><span class="line">      activeEffect.<span class="property">deps</span>.<span class="title function_">push</span>(effects);</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">trigger</span>(<span class="params">target, key, value</span>)&#123;</span><br><span class="line">      <span class="keyword">const</span> depsMap = bucketMap.<span class="title function_">get</span>(target)</span><br><span class="line">      <span class="keyword">if</span> (!depsMap) &#123;</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">     <span class="keyword">const</span> effects = depsMap.<span class="title function_">get</span>(key);</span><br><span class="line">     <span class="keyword">const</span> effectsToRun = <span class="keyword">new</span> <span class="title class_">Set</span>(effects); </span><br><span class="line">     effectsToRun.<span class="title function_">forEach</span>(<span class="function"><span class="params">effect</span> =&gt;</span> &#123;</span><br><span class="line">     </span><br><span class="line">       <span class="comment">//新增 自己调用自己时进行拦截</span></span><br><span class="line">       <span class="keyword">if</span> (activeEffect !== effect)&#123;</span><br><span class="line">         <span class="title function_">effect</span>();</span><br><span class="line">       &#125;</span><br><span class="line">     &#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> obj = <span class="keyword">new</span> <span class="title class_">Proxy</span>(data, &#123;</span><br><span class="line">    <span class="title function_">get</span>(<span class="params">target, key, receiver</span>) &#123;</span><br><span class="line">    <span class="title function_">track</span>(target, key)</span><br><span class="line">      <span class="keyword">return</span> <span class="title class_">Reflect</span>.<span class="title function_">get</span>(target, key, receiver)</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="title function_">set</span>(<span class="params">target, key, value, receiver</span>) &#123;</span><br><span class="line">      <span class="keyword">const</span> result = <span class="title class_">Reflect</span>.<span class="title function_">set</span>(target, key, value, receiver);</span><br><span class="line">      <span class="title function_">trigger</span>(target, key, value);</span><br><span class="line">      <span class="keyword">return</span> result;</span><br><span class="line">    &#125;</span><br><span class="line">    &#125;)</span><br></pre></td></tr></table></figure>
+
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>我们了解到了什么是函数的定副作用以及函数的副作用和响应式系统有什么联系</li>
+<li>我们通过proxy进行代理了对象的属性读取和赋值操作给出了第一版的响应式系统基本代码</li>
+<li>通过分支的切换和清除完善了响应式系统</li>
+<li>通过分析函数调用栈道关系解决了effect副作用函数嵌套问题</li>
+<li>通过增加自身调用时不触发副作用函数的执行来避免无限递归的循环问题</li>
+</ul>
+<p>后续我们将继续完善响应式系统，主要来实现vue3响应式系统中的一些api</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/vue/" rel="tag"># vue</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/02/06/vue3%E5%93%8D%E5%BA%94%E5%BC%8F%E8%AE%BE%E8%AE%A12/" rel="prev" title="vu3响应式实现（2）">
+      <i class="fa fa-chevron-left"></i> vu3响应式实现（2）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/04/17/form%E8%A1%A8%E5%8D%95%E5%AE%9E%E7%8E%B0%E6%80%9D%E8%B7%AF/" rel="next" title="表单实现思路">
+      表单实现思路 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E7%9A%84%E5%89%AF%E4%BD%9C%E7%94%A8"><span class="nav-number">1.</span> <span class="nav-text">函数的副作用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%93%8D%E5%BA%94%E5%BC%8F%E6%95%B0%E6%8D%AE"><span class="nav-number">2.</span> <span class="nav-text">响应式数据</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%93%8D%E5%BA%94%E5%BC%8F%E6%95%B0%E6%8D%AE%E7%9A%84%E5%9F%BA%E6%9C%AC%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.1.</span> <span class="nav-text">响应式数据的基本实现</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%8C%E5%96%84%E7%9A%84%E5%93%8D%E5%BA%94%E5%BC%8F%E7%B3%BB%E7%BB%9F"><span class="nav-number">3.</span> <span class="nav-text">完善的响应式系统</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%93%8D%E5%BA%94%E5%BC%8F%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%88%9D%E6%AD%A5%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.1.</span> <span class="nav-text">响应式系统的初步实现</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E6%94%AF%E5%88%87%E6%8D%A2%E4%B8%8Ecleanup"><span class="nav-number">3.2.</span> <span class="nav-text">分支切换与cleanup</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B5%8C%E5%A5%97%E7%9A%84effect%E5%92%8Ceffect%E5%87%BD%E6%95%B0%E6%A0%88"><span class="nav-number">3.3.</span> <span class="nav-text">嵌套的effect和effect函数栈</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%87%BD%E6%95%B0%E7%9A%84%E6%89%A7%E8%A1%8C%E6%A0%88"><span class="nav-number">3.4.</span> <span class="nav-text">函数的执行栈</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A0%E9%99%90%E9%80%92%E5%BD%92%E5%BE%AA%E7%8E%AF"><span class="nav-number">3.5.</span> <span class="nav-text">无限递归循环</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">朱广龙</p>
+  <div class="site-description" itemprop="description">定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">朱广龙</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

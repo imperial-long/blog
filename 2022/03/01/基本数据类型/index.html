@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="最近面试，JS 基本数据类型这块被完虐了……前言最近去面试了几个公司，发现自己被面试官在js基本数据类型这块知识完虐，发现自己js基础不扎实包括自己作为面试官去面试别人，发现一个很大的问题，能力是很不错的，但是js基础扎实不够扎实很多人可能认为能力比基础更重要答案是否定的,引用网上比较流行的话  基础很重要，只有基础好才会很少出bug，大多数的都是基础不扎实造成的  这里给出几个问题，要是如果都能">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基本数据类型">
+<meta property="og:url" content="http://example.com/2022/03/01/%E5%9F%BA%E6%9C%AC%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/index.html">
+<meta property="og:site_name" content="朱广龙的个人博客">
+<meta property="og:description" content="最近面试，JS 基本数据类型这块被完虐了……前言最近去面试了几个公司，发现自己被面试官在js基本数据类型这块知识完虐，发现自己js基础不扎实包括自己作为面试官去面试别人，发现一个很大的问题，能力是很不错的，但是js基础扎实不够扎实很多人可能认为能力比基础更重要答案是否定的,引用网上比较流行的话  基础很重要，只有基础好才会很少出bug，大多数的都是基础不扎实造成的  这里给出几个问题，要是如果都能">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/38e906d5254340c4abefa6cd4a955f6b~tplv-k3u1fbpfcp-watermark.image">
+<meta property="og:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/c9b1d8af7d0c44c3a16d112a55b960b4~tplv-k3u1fbpfcp-watermark.image">
+<meta property="og:image" content="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b5c618d5b27a4b8e9490a1e2f24a4c8d~tplv-k3u1fbpfcp-watermark.image">
+<meta property="article:published_time" content="2022-03-01T12:39:00.000Z">
+<meta property="article:modified_time" content="2024-10-10T05:13:35.394Z">
+<meta property="article:author" content="朱广龙">
+<meta property="article:tag" content="js基本数据类型">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/38e906d5254340c4abefa6cd4a955f6b~tplv-k3u1fbpfcp-watermark.image">
+
+<link rel="canonical" href="http://example.com/2022/03/01/%E5%9F%BA%E6%9C%AC%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>基本数据类型 | 朱广龙的个人博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">朱广龙的个人博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/03/01/%E5%9F%BA%E6%9C%AC%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="朱广龙">
+      <meta itemprop="description" content="定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="朱广龙的个人博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          基本数据类型
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2022-03-01 20:39:00" itemprop="dateCreated datePublished" datetime="2022-03-01T20:39:00+08:00">2022-03-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2024-10-10 13:13:35" itemprop="dateModified" datetime="2024-10-10T13:13:35+08:00">2024-10-10</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="最近面试，JS-基本数据类型这块被完虐了……"><a href="#最近面试，JS-基本数据类型这块被完虐了……" class="headerlink" title="最近面试，JS 基本数据类型这块被完虐了……"></a>最近面试，JS 基本数据类型这块被完虐了……</h1><h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>最近去面试了几个公司，发现自己被面试官在js基本数据类型这块知识完虐，发现自己js基础不扎实<br>包括自己作为面试官去面试别人，发现一个很大的问题，能力是很不错的，但是js基础扎实不够扎实<br>很多人可能认为能力比基础更重要答案是否定的,引用网上比较流行的话</p>
+<blockquote>
+<p>基础很重要，只有基础好才会很少出<code>bug</code>，大多数的都是<strong>基础不扎实造成的</strong></p>
+</blockquote>
+<p>这里给出几个问题，要是如果都能回答对并且知道为什么（本文章可以选择忽略）</p>
+<ul>
+<li><strong>基本数据类型和引用数据类型有什么区别</strong></li>
+<li><strong>字符串长度为什么确定了就不能再修改</strong></li>
+<li><strong>0b1, 0x1 为什么表示的是数字，不是字符串</strong></li>
+<li><strong>为什么基本数据类型是存储在栈中，引用数据类型是存储在堆中的</strong></li>
+<li><strong>什么时候使用<code>null</code>，什么时候使用<code>undefined</code></strong></li>
+<li><strong>给基本数据类型定义了方法和属性不生效？</strong></li>
+<li><strong>假值对象是什么</strong></li>
+<li><strong><code>typeof</code>是根据什么原理区分数据类型的</strong></li>
+<li><strong>0.1 + 0.2 为什么不等于0.3</strong></li>
+<li><strong>对象数据类型什么时候<code>valueOf</code>优先于<code>toString</code></strong></li>
+<li><strong>对象类型什么时候<code>toString</code>优先于<code>valueOf</code></strong></li>
+<li><strong>obj + 1 如何才能等于2</strong></li>
+</ul>
+<hr>
+<p>在开始之前，在这里强调一下处于某个块中的知识点以及红色字体标记是非常重要的知识点在面试过程中高频出现以及容易出错的地方,在阅读过程一定要自己亲自尝试加深记忆而不是只看不敲代码</p>
+<hr>
+<h2 id="数据类型"><a href="#数据类型" class="headerlink" title="数据类型"></a>数据类型</h2><p>在js中根据<strong>赋值操作</strong>是赋值的是值还是内存地址，可以分为<strong>基本数据类型</strong>和<strong>对象数据类型</strong>(引用数据类型) </font></p>
+<blockquote>
+<p>数据类型在数据结构中的定义是<font color='red'>一组性质相同的值的集合以及定义在这个值集合上的一组操作</font>的总称</p>
+</blockquote>
+<p>基础数据类型和对象数据类型的区别如图所示<br><img src="https://p6-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/38e906d5254340c4abefa6cd4a955f6b~tplv-k3u1fbpfcp-watermark.image" alt="类型对比图.jpg"></p>
+<h3 id="基本类型"><a href="#基本类型" class="headerlink" title="基本类型"></a>基本类型</h3><p>js中基本数据类型主要包括<code>Number</code>，<code>String</code>，<code>Boolean</code>，<code>Undefinde</code>，<code>Null</code>，<code>Symbol</code>, <code>BigInt</code></p>
+<h4 id="Number"><a href="#Number" class="headerlink" title="Number"></a>Number</h4><p>该类型包括整数和小数。数字类型用于存储数值，是不可变类型，如果改变数字类型的值，将重新分配内存空间。<br>number用<font>二进制(0b)，八进制(0o)，十进制，十六进制(0x)</font>来表示， 由于受内存限制,最小值为5e-324,最大值为1.7976931348623157e+308,如果超过了最大值会显示为Infinity, 超过了最小值会显示为—Infinity,表示的最大整数为<code>2^53 - 1</code></p>
+<blockquote>
+<ul>
+<li>number类型EE754格式来表示其整数和浮点数值, 浮点数的精度最大为17位，大于17位会发生精度丢失，这也是导致 0.1 + 0.2不严格等于0.3的原因</li>
+<li>如果该数大于进制，有些浏览器会将表示进制的前导符忽略默认十进制，但是有些浏览器会报错，chrome浏览器会报错</li>
+<li>可以通过<code>Number.MAX\_VALUE</code>访问最大值和<code>Number.MIN\_VALUE</code>访问最小值</li>
+</ul>
+</blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> num1 = <span class="number">0123</span> <span class="comment">// 十进制</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> num2 = <span class="number">0b1011</span> <span class="comment">// 二进制</span></span><br><span class="line"><span class="keyword">var</span> num3 = 0b112011 <span class="comment">// 二进制最高为1，会报错: Invalid or unexpected token</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> num4 = <span class="number">0o12376</span> <span class="comment">// 八进制</span></span><br><span class="line"><span class="keyword">var</span> num5 = 0o7899222 <span class="comment">// 八进制最高为7，会报错: Invalid or unexpected token</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> num6 = <span class="number">0x2177</span> <span class="comment">// 十六进制</span></span><br><span class="line"><span class="keyword">var</span> num7 = 0xEFR <span class="comment">//  十六进制最高为F，会报错: Invalid or unexpected token</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> num8 = <span class="number">.5</span> <span class="comment">// 浮点数，可以省略前面的0</span></span><br><span class="line"><span class="keyword">var</span> num9 = <span class="number">0.5</span> <span class="comment">//浮点数</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><code>NaN</code>即非数值，是一个特殊的数值，这个数值用于表示一个本来要返回数值的操作数未返回数值的情况</p>
+</blockquote>
+<blockquote>
+<p>NaN有2个特殊的特点</p>
+<ul>
+<li>涉及到NaN的操作都会返回NaN</li>
+<li>NaN和任何值都不相等，通过&#96;isNaN函数来判断是不是NaN</li>
+</ul>
+</blockquote>
+<h4 id="String"><a href="#String" class="headerlink" title="String"></a>String</h4><p>该类型用于表示由零或多个16位Unicode字符组成的字符序列，即字符串。字符串可以由双引号（“）或单引号（‘）表示，因此这两种字符串的写法都是有效的</p>
+<blockquote>
+<p>string 类型比较特殊是存储在常量池中的， 常量池也算栈的一块内存空间，&#x2F;&#x2F;todo 想要深入了解常量池到可以参考<a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/455421872">JS 的字符串如何分配内存</a>这篇文章</p>
+</blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> str = <span class="string">&#x27;test&#x27;</span> <span class="comment">// 单引号字符串</span></span><br><span class="line"><span class="keyword">var</span> str1 = <span class="string">&quot;test&quot;</span> <span class="comment">// 双引号字符串</span></span><br><span class="line"><span class="keyword">var</span> str2 = <span class="string">&#x27;test&quot; // 非合法字符串</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="Boolean"><a href="#Boolean" class="headerlink" title="Boolean"></a>Boolean</h4><p>该类型的字面值只有<code>true</code>和<code>false</code>是区分大小写的。也就是说.True和False(以及其他的混合大小写形式)都不是Boolean值，只是标识符</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> isSame = <span class="literal">true</span> <span class="comment">// 布尔值为true</span></span><br><span class="line"><span class="keyword">var</span> isValidate = <span class="literal">false</span> <span class="comment">// 布尔值为 false</span></span><br><span class="line"><span class="keyword">var</span> isNotBoolean = <span class="title class_">True</span> <span class="comment">// 不是布尔值，这是一个变量</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="Null"><a href="#Null" class="headerlink" title="Null"></a>Null</h4><p>该类型的字面量只有一个值，即null, 从逻辑上来讲null值表示一个空对象指针，<strong>这也正是使用<a href="#%E5%88%A4%E6%96%AD%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B">typeof</a> 操作符检测null时会返回</strong><code>object</code>的原因</p>
+<blockquote>
+<ul>
+<li>通常在声明某个变量为对象类型时。默认初始化该值为null</li>
+<li>null &#x3D;&#x3D; undefined为 true, null &#x3D;&#x3D;&#x3D; undefined 为 false</li>
+</ul>
+</blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> obj = <span class="literal">null</span> <span class="comment">// Null的字面量为null</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="Undefined"><a href="#Undefined" class="headerlink" title="Undefined"></a>Undefined</h4><p>该类型只有一个值，即特殊的<code>undefined</code>, 在使用<code>let</code>,<code>var</code>关键词声明变量并为初始化时，这个变量的值就是undefined</p>
+<blockquote>
+<p>由于<code>undefined</code>作为<code>window</code>的全局属性，老版本浏览器可以进行修改，因此未获取正确的undefined时通常长长使用 <code>void 0</code>, 不知道为什么void 0 可以获取安全的undefined,可以参考<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_45709829/article/details/123795909">js冷知识void 0是什么？为什么比undefined好用？</a>这篇文章</p>
+</blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> a <span class="comment">// undefined</span></span><br><span class="line"><span class="keyword">var</span> b = <span class="literal">undefined</span> <span class="comment">// Undefined的字面量为undefined</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="Bigint"><a href="#Bigint" class="headerlink" title="Bigint"></a>Bigint</h4><p>它提供了一种方法来表示大于 2^53 - 1 的整数。这原本是 Javascript 中可以用 Number 表示的最大数字。BigInt 可以表示任意大的整数, 通过数字后导n来进行创建,在实际开发中应用场景也比较少，就不详细介绍了，感兴趣的可以参考<a target="_blank" rel="noopener" href="https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/BigInt">MDN</a></p>
+<blockquote>
+<p>目前没有完美的兼容库来支持那些不能原生支持的浏览器， 兼容性比较差，实际应用场景也比较少</p>
+</blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> bigInter = <span class="number">1n</span> <span class="comment">// 创建了一个BigInt类型的字面量</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="引用数据类型-object-类型"><a href="#引用数据类型-object-类型" class="headerlink" title="引用数据类型 (object 类型)"></a>引用数据类型 (object 类型)</h3><p>对象类型其实就是一组数据和功能的集合，对象可以通过执行<code>new</code>操作符来创建<code>Object</code>类型的实例并为其添加属性或者方法，实际开发中我们比较常用通过字面量的形式来创建对象,<strong>对象的属性名只能是<code>字符串类型或symobl类型</code>，如果不是字符串类型或者symbol类型，那么会隐性转为字符串类型</strong></p>
+<blockquote>
+<p>对象中比较重要的考点，任何对象类型都会有这3个方法</p>
+<ul>
+<li><p>toString: 用来返回对象的字符串表示</p>
+</li>
+<li><p>valueOf: 用来返回对象的数值类型表示，通常情况下和toString()的返回值相同</p>
+</li>
+<li><p>constructor: 保存着用于创建当前对象的函数</p>
+</li>
+<li><p>这3个方法一定要记住，在类型转换中以及在面试中都是比较高频的考点</p>
+</li>
+</ul>
+</blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> obj = <span class="keyword">new</span> <span class="title class_">Object</span>() <span class="comment">// 通过new操作来创建对象</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 给对象添加方法</span></span><br><span class="line">obj.<span class="property">getAge</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line"> <span class="keyword">return</span> <span class="number">1</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 给对象添加属性</span></span><br><span class="line">obj.<span class="property">age</span> = <span class="number">1</span></span><br><span class="line"></span><br><span class="line"> obj[<span class="title class_">Symbol</span>(<span class="string">&#x27;a&#x27;</span>)] = <span class="number">2</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="Symbol"><a href="#Symbol" class="headerlink" title="Symbol"></a>Symbol</h3><p>由于对象的属性或者方法存在可覆盖性，这就容易造成因为命名冲突而导致的覆盖，<code>symbol</code>能够保证每个属性或者方法的名字是独一无二的</p>
+<blockquote>
+<p>在Es6之前，无论对象的属性还是方法都是字符串类型进行保存，因此很容易引起命名冲突<br>symbol 本质上是一个特殊的对象类型，也是不能使用new操作符来进行创建的唯一对象</p>
+</blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">var</span> = <span class="title class_">Symbol</span>(<span class="string">&#x27;a&#x27;</span>)  <span class="comment">// 创建一个symbol的数据类型</span></span><br><span class="line"> <span class="comment">//</span></span><br><span class="line"><span class="keyword">var</span> b = <span class="keyword">new</span> <span class="title class_">Symbol</span>(<span class="string">&#x27;b&#x27;</span>) <span class="comment">// Symbol is not a constructor at new Symbol</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> obj = &#123;&#125;</span><br><span class="line"></span><br><span class="line">obj[<span class="title class_">Symbol</span>(<span class="string">&#x27;a&#x27;</span>)] = <span class="number">1</span></span><br><span class="line">obj[<span class="title class_">Symbol</span>(<span class="string">&#x27;a&#x27;</span>)] = <span class="number">2</span>  <span class="comment">// 对象的属性不会被覆盖</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="判断数据类型"><a href="#判断数据类型" class="headerlink" title="判断数据类型"></a>判断数据类型</h3><p>上面我们对js常见的数据类型也做了简单理解，本节我们将学习如何使用<code>typeof</code>关键词来进行类型判断以及<code>typeof</code>能够进行类型判断的原理</p>
+<blockquote>
+<p>js是一门弱语言(变量可以随时持有任何类型的值)，它在声明变量时无需确定变量的类型，js在运行时会自动判断, 想要了解js运行时以及运行的环境可以参考<a target="_blank" rel="noopener" href="https://juejin.cn/post/7069408407626711048">JS runtime environment)</a></p>
+</blockquote>
+<p>typeof 作用于各种数据类型的返回值，如图所示</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/c9b1d8af7d0c44c3a16d112a55b960b4~tplv-k3u1fbpfcp-watermark.image" alt="typeof返回值.jpg"></p>
+<h4 id="typeof-底层原理"><a href="#typeof-底层原理" class="headerlink" title="typeof 底层原理"></a>typeof 底层原理</h4><p>不同的对象在底层都表示为二进制，在Javascript中二进制前（低）三位存储其类型信息。具体存储信息如图所示</p>
+<p><img src="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/b5c618d5b27a4b8e9490a1e2f24a4c8d~tplv-k3u1fbpfcp-watermark.image" alt="js底层前三位存储标识.jpg"></p>
+<p><strong>观察上面的表格我们可以获取很多有用的信息比如为什么typeof null 返回的是object，因为object类型是通过000进行存储</strong></p>
+<blockquote>
+<p>Symbol和BigInt的底层存储</p>
+<ul>
+<li>Symbol是使用c++实现的特殊对象，正常来讲的话应该也是000，具体的前三位存储信息的看源代码，有兴趣的话可以看一下源码<a target="_blank" rel="noopener" href="https://github.com/v8/v8">chrome V8源码</a></li>
+<li>BigInt其实是比较特殊的整数，因此bigInt的前三位也是100,但是typeof如何去区分的话，有兴趣的可以看一下源码<a target="_blank" rel="noopener" href="https://github.com/search?q=repo:v8/v8%20typeof&type=code">chrome V8 typeof具体实现逻辑</a></li>
+</ul>
+</blockquote>
+<h4 id="判断对象数据类型"><a href="#判断对象数据类型" class="headerlink" title="判断对象数据类型"></a>判断对象数据类型</h4><p>在实际使用过程中可能存在对对象数据类型的判断，我们可以使用<code>constructor</code>以及<code>instanceof</code>以及<code>Object.prototype.toString.call</code>,由于篇幅有限就不具体展开有兴趣的可以去参考[对象类型判读]这篇文章</p>
+<h3 id="数据类型之间转换"><a href="#数据类型之间转换" class="headerlink" title="数据类型之间转换"></a>数据类型之间转换</h3><p>数据类型之间的转换不管在面试过程中还是实际开发过程使用的频率还是比较高的，因此这一块知识还是相当比较重要的</p>
+<h4 id="Number类型与其他类型之间的转换"><a href="#Number类型与其他类型之间的转换" class="headerlink" title="Number类型与其他类型之间的转换"></a>Number类型与其他类型之间的转换</h4><p>在js中有三个函数可以把非数值类型转换为数值分为别为<code>parseInt()</code>、<code>parseFloat()</code>、<code>Number()</code>,前面2个转换规则比较简单，这里主要讲一下<code>Number</code>的转换规则</p>
+<ul>
+<li>Boolean类型，true转换为1，false转换为0</li>
+<li>Undefined类型，转换为NaN</li>
+<li>Null类型转换为0</li>
+<li>如果是字符串的话有以下规则<ul>
+<li>如果字符串中只包含数字那么将其转换为对应的字面量</li>
+<li>字符串如果是空字符串那么转换为0</li>
+<li>不符合以上规则的转换为NaN</li>
+</ul>
+</li>
+<li>Object类型<ul>
+<li>首先调用<code>valueOf</code>方法，如果返回的是基本数据类型，那么再使用以上基本数据类型的转换规则</li>
+<li>如果valueOf方法返回的不是基本数据类型，那么会调用toString方法，如果返回的是基本数据类型，那么再使用以上基本数据类型的转换规则</li>
+<li>如果<code>toString</code>方法返回的不是基本数据类型,那么会报错</li>
+</ul>
+</li>
+<li>Symbol无法转换为number类型</li>
+<li>BinInt会忽略后面的n</li>
+</ul>
+<blockquote>
+<p>字符串中有前导0，那么会忽略前导0<br>Object转换为Number类型，本质上调的是<code>Symbol.toPrimitive</code>方法，我们可以重写该方法从而实现自己转换规则<br>实际开发过程中我们比较喜欢使用+隐性转换将其他类型转换为Number类型</p>
+</blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> num1 = <span class="title class_">Number</span>(<span class="string">&#x27;1223&#x27;</span>) <span class="comment">// 123</span></span><br><span class="line"><span class="keyword">var</span> num2 = <span class="title class_">Number</span>(<span class="string">&#x27;123aqq&#x27;</span>) <span class="comment">// NaN</span></span><br><span class="line"><span class="keyword">var</span> num3 = <span class="title class_">Number</span>(<span class="string">&#x27;&#x27;</span>) <span class="comment">// 0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> num4 = <span class="title class_">Number</span>(<span class="literal">true</span>) <span class="comment">// 1</span></span><br><span class="line"><span class="keyword">var</span> num5 = <span class="title class_">Number</span>(<span class="literal">false</span>) <span class="comment">// 0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> num6 = <span class="title class_">Number</span>(<span class="literal">null</span>) <span class="comment">// 0</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> num7 = <span class="title class_">Number</span>(<span class="literal">undefined</span>) <span class="comment">// NaN</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> num8 = <span class="title class_">Number</span>(<span class="title class_">Symbol</span>(<span class="string">&#x27;a&#x27;</span>)) <span class="comment">// Cannot convert a Symbol value to a number at Number</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> num9 = <span class="title class_">Number</span>(<span class="number">2n</span>) <span class="comment">// 2</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> obj = &#123;&#125;</span><br><span class="line"><span class="keyword">var</span> num10 = <span class="title class_">Number</span>(obj) <span class="comment">// NaN</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 重写valueOf方法</span></span><br><span class="line">obj.<span class="property">valueOf</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">3</span></span><br><span class="line">&#125;</span><br><span class="line"> <span class="keyword">var</span> num11 = <span class="title class_">Number</span>(obj) <span class="comment">// 3</span></span><br><span class="line"></span><br><span class="line">obj.<span class="property">toString</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">return</span> <span class="number">2</span></span><br><span class="line">&#125;</span><br><span class="line"> <span class="keyword">var</span> num12 = <span class="title class_">Number</span>(obj) <span class="comment">// 2</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 重新改写toString</span></span><br><span class="line">obj.<span class="property">toString</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">  <span class="keyword">return</span> &#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">var</span> num12 = <span class="title class_">Number</span>(obj) <span class="comment">//  Cannot convert object to primitive value at Number</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="String类型与其他类型之间的转换"><a href="#String类型与其他类型之间的转换" class="headerlink" title="String类型与其他类型之间的转换"></a>String类型与其他类型之间的转换</h4><p>在js中主要使用<code>toString()</code>、<code>String()</code>来进行将其他类型转为String类型, 两者转换规则相同</p>
+<ul>
+<li>Number类型直接转为对应的数字前面和后面分别加上引号</li>
+<li>Boolean类型转换为对应的布尔值前面和后面加上引号</li>
+<li>Undefined类型转换为对应的undefined前面和后面加上引号</li>
+<li>Null类型转换为对应的undefined前面和后面加上引号</li>
+<li>Object类型<ul>
+<li>首先调用<code>toString</code>方法，如果返回的是基本数据类型，那么再使用以上基本数据类型的转换规则</li>
+<li>如果toString方法返回的不是基本数据类型，那么会调用valueOf方法，如果返回的是基本数据类型，那么再使用以上基本数据类型的转换规则</li>
+<li>如果<code>valueOf</code>方法返回的不是基本数据类型,那么会报错</li>
+</ul>
+</li>
+<li>Symbol类型转换为对应symbol(‘xx’)前面和后面加上引号</li>
+<li>BigInt转换时会忽略末尾的n，前面和后面加上引号</li>
+</ul>
+<blockquote>
+<p>在转换为数字类型时优先调用好的是valueOf，而在这里优先调用的是toString，千万别记混了<br>一般来说更多的是String()方法因为可以兼容null和undefined<br>数字的toString方法能够支持传入一个参数，表示将数字转换为什么进制</p>
+</blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> str1 = <span class="title class_">String</span>(<span class="number">222</span>) <span class="comment">// &#x27;222&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> str2 = <span class="title class_">String</span>(<span class="literal">true</span>) <span class="comment">// &#x27;true&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> str3 = <span class="title class_">String</span>(<span class="literal">undefined</span>) <span class="comment">// &#x27;undefined&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> str4 = <span class="title class_">String</span>()</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> str5 = <span class="title class_">String</span>(<span class="title class_">Symbol</span>(<span class="string">&#x27;a&#x27;</span>)) <span class="comment">// &#x27;Symbol(&#x27;a&#x27;)&#x27;</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">var</span> str6 = <span class="title class_">Number</span>(<span class="number">2n</span>) <span class="comment">// &#x27;2&#x27;</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">var</span> obj = &#123;&#125;</span><br><span class="line">  <span class="keyword">var</span> str7 = <span class="title class_">String</span>(obj) <span class="comment">// NaN</span></span><br><span class="line"></span><br><span class="line">   <span class="comment">// 重新改写toString</span></span><br><span class="line">    obj.<span class="property">toString</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&#x27;2222&#x27;</span></span><br><span class="line">  &#125;</span><br><span class="line">   <span class="keyword">var</span> str8 = <span class="title class_">Number</span>(obj) <span class="comment">// &#x27;2222&#x27;</span></span><br><span class="line"></span><br><span class="line">obj.<span class="property">toString</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> &#123;&#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 重写valueOf方法</span></span><br><span class="line">  obj.<span class="property">valueOf</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&#x27;wwwr&#x27;</span></span><br><span class="line">  &#125;</span><br><span class="line">   <span class="keyword">var</span> str9 = <span class="title class_">String</span>(obj) <span class="comment">// wwwr</span></span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 重新改写toString</span></span><br><span class="line">  obj.<span class="property">toString</span> = <span class="keyword">function</span> (<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> &#123;&#125;</span><br><span class="line">  &#125;</span><br><span class="line"><span class="keyword">var</span> num12 = <span class="title class_">String</span>(obj) <span class="comment">//  Cannot convert object to primitive value at String</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="Boolean类型与其他类型之间的转换"><a href="#Boolean类型与其他类型之间的转换" class="headerlink" title="Boolean类型与其他类型之间的转换"></a>Boolean类型与其他类型之间的转换</h4><p>在js中主要使用<code>Boolean()</code>来进行将其他类型转为<code>String</code>类型, 两者转换规则相同</p>
+<ul>
+<li>Number类型<ul>
+<li>值为0转换为false</li>
+<li>值为NaN转换为false</li>
+<li>其他任何值转换为true</li>
+</ul>
+</li>
+<li>String类型<ul>
+<li>字符串长度为0转换false</li>
+<li>字符串只要长度不为0转换为true</li>
+</ul>
+</li>
+<li>Null类型转换为false</li>
+<li>Undefined转换为false</li>
+<li>Object类型转换为true</li>
+<li>Symbol转换为true</li>
+<li>BigInt类型<ul>
+<li>0n转换为false</li>
+<li>其他任何值为true</li>
+</ul>
+</li>
+</ul>
+<blockquote>
+<p>其他类型转换为Boolean类型本质上是执行的内部的<code>toBoolean</code>方法，该方法不可见</p>
+</blockquote>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> boolean1 = <span class="title class_">Boolean</span>(<span class="number">0</span>) <span class="comment">// false</span></span><br><span class="line"><span class="keyword">var</span> boolean2 = <span class="title class_">Boolean</span>(<span class="number">1</span>) <span class="comment">// true</span></span><br><span class="line"><span class="keyword">var</span> boolean3 = <span class="title class_">Boolean</span>(<span class="title class_">NaN</span>) <span class="comment">// false</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> boolean4 = <span class="title class_">Boolean</span>(<span class="string">&#x27;&#x27;</span>) <span class="comment">// false</span></span><br><span class="line"><span class="keyword">var</span> boolean5 = <span class="title class_">Boolean</span>(<span class="string">&#x27;boolean&#x27;</span>) <span class="comment">// true</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> boolean6 = <span class="title class_">Boolean</span>(<span class="literal">undefined</span>) <span class="comment">// false</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> boolean7 = <span class="title class_">Boolean</span>(<span class="literal">null</span>) <span class="comment">// false</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> obj = &#123;&#125;</span><br><span class="line"><span class="keyword">var</span> boolean8 = <span class="title class_">Boolean</span>(obj) <span class="comment">// true</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> boolean9 = <span class="title class_">Boolean</span>(<span class="title class_">Symbol</span>(<span class="string">&#x27;a&#x27;</span>)) <span class="comment">// true</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> boolean10 = <span class="title class_">Boolean</span>(<span class="number">0n</span>) <span class="comment">// false</span></span><br><span class="line"><span class="keyword">var</span> boolean11 = <span class="title class_">Boolean</span>(<span class="number">1n</span>) <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="对象类型和其他类型之间的转换"><a href="#对象类型和其他类型之间的转换" class="headerlink" title="对象类型和其他类型之间的转换"></a>对象类型和其他类型之间的转换</h4><p>其他数据类型可以通过new操作符加上首字母大写的构造函数来创建对象，除<code>null</code>和<code>undefined</code>以外或者使用 <code>new + Object()</code>来创建对象</p>
+<ul>
+<li><p>Number类型: new + Number(xxx)</p>
+</li>
+<li><p>String类型 new + String(xxx)</p>
+</li>
+<li><p>Boolean类型 new + Boolean(false | true)</p>
+</li>
+<li><p>Undefined没有对应的构造函数,可以采用 new Object(undefined)</p>
+</li>
+<li><p>Null类型没有对应的构造函数, 可以采用 new Object(undefined)</p>
+</li>
+<li><p>Symbol类型 没有对应的构造函数，可以采用 new Object(Symbol(xx))</p>
+</li>
+<li><p>BigInt类型 new + BigInt(xxx)</p>
+<blockquote>
+<p>以上首字母大写的构造函数也叫做某某类型的包装类型，重写了Object对应的ValueOf和toString方法,返回值为传入构造函数对应的值<br>在js中也存在一些假值对象,当然本身这是不合理的比如<code>document.all</code>对象，为什么这么是因为ie存在使用一些注释来判断ie环境</p>
+</blockquote>
+</li>
+</ul>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> obj1 = <span class="keyword">new</span> <span class="title class_">Number</span>(<span class="number">222</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> obj2 = <span class="keyword">new</span> <span class="title class_">String</span>(<span class="string">&#x27;str&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> obj3 = <span class="keyword">new</span> <span class="title class_">Boolean</span>(<span class="literal">true</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> obj4 = <span class="keyword">new</span> <span class="title class_">Object</span>(<span class="literal">undefined</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> obj5 = <span class="keyword">new</span> <span class="title class_">Object</span>(<span class="literal">null</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> obj6 = <span class="keyword">new</span> <span class="title class_">Object</span>(<span class="title class_">Symbol</span>(<span class="string">&#x27;a&#x27;</span>))</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> obj7 = <span class="keyword">new</span> <span class="title class_">BigInt</span>(<span class="number">2n</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<hr>
+<h3 id="回答开篇"><a href="#回答开篇" class="headerlink" title="回答开篇"></a>回答开篇</h3><p>在看本节时经过自己前面的学习看看自己现在是否能够进行回答开篇问题</p>
+<hr>
+<ul>
+<li>基本数据类型和引用数据类型有什么区别</br> <strong>根据赋值操作是否赋值为地址值还是真正的值</strong></li>
+<li>字符串长度为什么确定了就不能再修改</br> <strong>字符串是基础数据类型，数据类型在声明的时候就确定了内存大小</strong></li>
+<li><code>0b1</code>, <code>0x1</code> 为什么表示的是数字，不是字符串</br> <strong>js数字类型二进制，八进制的字面量表示方法</strong></li>
+<li>为什么基本数据类型是存储在栈中，引用数据类型是存储在堆中的</br> <strong>基本数据类型大小确定，引用数据类型大小不确定</strong></li>
+<li>什么时候使用null，什么时候使用undefined <strong>某个对象将被赋值为对象类型时，将该变量进行初始化为<code>null</code>，<code>undefined</code>不需要赋初始值，只声明，默认为<code>undefined</code></strong></li>
+<li>给基本数据类型定义了方法和属性不生效？</br><strong>基本数据类型在使用属性或者方法时会先转换为对应的包装类型，但很快该对象就别销毁了，下一次访问某个属性本质上是又重新重新创建了一个新的对象</strong></li>
+<li>假值对象是什么</bar><strong>IE浏览器自己作妖，为了做一些特殊操作，遗留下来的问题</strong></li>
+<li>typeof是根据什么原理区分数据类型的 </br><strong><code>typeof</code>根据底层存储二进制前三位来区分类型</strong></li>
+<li>0.1 + 0.2 为什么不等于0.3 </br><strong>数字采用<code>EE754</code>来存储，导致在存储的过程中精度丢失</strong></li>
+<li>对象数据类型什么时候<code>valueOf</code>优先于<code>toString</code> </br><strong>在转换为数字类型或者在进行数学运算时</strong></li>
+<li>对象类型什么时候<code>toString</code>优先于<code>valueOf</code></br><strong>在转换为字符串类型或者在进行字符串拼接时</strong></li>
+<li>obj + 1 如何才能等于2 </br><strong>改写该对象的valueOf方法使其返回值为1或者改写</strong><code>Symbol.toPrimitive</code></li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/js%E5%9F%BA%E6%9C%AC%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/" rel="tag"># js基本数据类型</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/03/01/%E6%A8%A1%E5%9D%97%E5%8C%96%E8%BF%9B%E9%98%B6/" rel="prev" title="模块化进阶">
+      <i class="fa fa-chevron-left"></i> 模块化进阶
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/01/17/promise%E6%8F%AD%E7%A7%98/" rel="next" title="promise揭秘">
+      promise揭秘 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%80%E8%BF%91%E9%9D%A2%E8%AF%95%EF%BC%8CJS-%E5%9F%BA%E6%9C%AC%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E8%BF%99%E5%9D%97%E8%A2%AB%E5%AE%8C%E8%99%90%E4%BA%86%E2%80%A6%E2%80%A6"><span class="nav-number">1.</span> <span class="nav-text">最近面试，JS 基本数据类型这块被完虐了……</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.2.</span> <span class="nav-text">数据类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.2.1.</span> <span class="nav-text">基本类型</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Number"><span class="nav-number">1.2.1.1.</span> <span class="nav-text">Number</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#String"><span class="nav-number">1.2.1.2.</span> <span class="nav-text">String</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Boolean"><span class="nav-number">1.2.1.3.</span> <span class="nav-text">Boolean</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Null"><span class="nav-number">1.2.1.4.</span> <span class="nav-text">Null</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Undefined"><span class="nav-number">1.2.1.5.</span> <span class="nav-text">Undefined</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Bigint"><span class="nav-number">1.2.1.6.</span> <span class="nav-text">Bigint</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%95%E7%94%A8%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B-object-%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.2.2.</span> <span class="nav-text">引用数据类型 (object 类型)</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Symbol"><span class="nav-number">1.2.3.</span> <span class="nav-text">Symbol</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A4%E6%96%AD%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.2.4.</span> <span class="nav-text">判断数据类型</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#typeof-%E5%BA%95%E5%B1%82%E5%8E%9F%E7%90%86"><span class="nav-number">1.2.4.1.</span> <span class="nav-text">typeof 底层原理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%A4%E6%96%AD%E5%AF%B9%E8%B1%A1%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="nav-number">1.2.4.2.</span> <span class="nav-text">判断对象数据类型</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B%E4%B9%8B%E9%97%B4%E8%BD%AC%E6%8D%A2"><span class="nav-number">1.2.5.</span> <span class="nav-text">数据类型之间转换</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Number%E7%B1%BB%E5%9E%8B%E4%B8%8E%E5%85%B6%E4%BB%96%E7%B1%BB%E5%9E%8B%E4%B9%8B%E9%97%B4%E7%9A%84%E8%BD%AC%E6%8D%A2"><span class="nav-number">1.2.5.1.</span> <span class="nav-text">Number类型与其他类型之间的转换</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#String%E7%B1%BB%E5%9E%8B%E4%B8%8E%E5%85%B6%E4%BB%96%E7%B1%BB%E5%9E%8B%E4%B9%8B%E9%97%B4%E7%9A%84%E8%BD%AC%E6%8D%A2"><span class="nav-number">1.2.5.2.</span> <span class="nav-text">String类型与其他类型之间的转换</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Boolean%E7%B1%BB%E5%9E%8B%E4%B8%8E%E5%85%B6%E4%BB%96%E7%B1%BB%E5%9E%8B%E4%B9%8B%E9%97%B4%E7%9A%84%E8%BD%AC%E6%8D%A2"><span class="nav-number">1.2.5.3.</span> <span class="nav-text">Boolean类型与其他类型之间的转换</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AF%B9%E8%B1%A1%E7%B1%BB%E5%9E%8B%E5%92%8C%E5%85%B6%E4%BB%96%E7%B1%BB%E5%9E%8B%E4%B9%8B%E9%97%B4%E7%9A%84%E8%BD%AC%E6%8D%A2"><span class="nav-number">1.2.5.4.</span> <span class="nav-text">对象类型和其他类型之间的转换</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9B%9E%E7%AD%94%E5%BC%80%E7%AF%87"><span class="nav-number">1.2.6.</span> <span class="nav-text">回答开篇</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">朱广龙</p>
+  <div class="site-description" itemprop="description">定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">朱广龙</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

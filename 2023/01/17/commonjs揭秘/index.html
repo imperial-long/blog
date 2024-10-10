@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="前言最近我在梳理nodejs的模块机制，以供日后查阅。以下代码实例基于node v14.16.0，并且实例主要采用javascript进行书写,示例文件目录如下 commonjs ├── index.js ├── person.js ├── propagation.js ├── require │ ├── index.js │ ├── main.jsx │ └── package.json ├──">
+<meta property="og:type" content="article">
+<meta property="og:title" content="commonjs揭秘">
+<meta property="og:url" content="http://example.com/2023/01/17/commonjs%E6%8F%AD%E7%A7%98/index.html">
+<meta property="og:site_name" content="朱广龙的个人博客">
+<meta property="og:description" content="前言最近我在梳理nodejs的模块机制，以供日后查阅。以下代码实例基于node v14.16.0，并且实例主要采用javascript进行书写,示例文件目录如下 commonjs ├── index.js ├── person.js ├── propagation.js ├── require │ ├── index.js │ ├── main.jsx │ └── package.json ├──">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/ceee61d2996843f8bcd0fc68981fd453~tplv-k3u1fbpfcp-zoom-1.image">
+<meta property="article:published_time" content="2023-01-17T12:39:00.000Z">
+<meta property="article:modified_time" content="2024-10-10T04:46:37.034Z">
+<meta property="article:author" content="朱广龙">
+<meta property="article:tag" content="flex布局">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/ceee61d2996843f8bcd0fc68981fd453~tplv-k3u1fbpfcp-zoom-1.image">
+
+<link rel="canonical" href="http://example.com/2023/01/17/commonjs%E6%8F%AD%E7%A7%98/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>commonjs揭秘 | 朱广龙的个人博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">朱广龙的个人博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/01/17/commonjs%E6%8F%AD%E7%A7%98/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="朱广龙">
+      <meta itemprop="description" content="定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="朱广龙的个人博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          commonjs揭秘
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2023-01-17 20:39:00" itemprop="dateCreated datePublished" datetime="2023-01-17T20:39:00+08:00">2023-01-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2024-10-10 12:46:37" itemprop="dateModified" datetime="2024-10-10T12:46:37+08:00">2024-10-10</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>最近我在梳理nodejs的模块机制，以供日后查阅。以下代码实例基于node v14.16.0，并且实例主要采用javascript进行书写,示例文件目录如下</p>
+<p>commonjs</p>
+<p>├── index.js</p>
+<p>├── person.js</p>
+<p>├── propagation.js</p>
+<p>├── require</p>
+<p>│ ├── index.js</p>
+<p>│ ├── main.jsx</p>
+<p>│ └── package.json</p>
+<p>├── require.json</p>
+<p>├── require.jsx</p>
+<p>├── require.node</p>
+<p>└── synchronization.js</p>
+<p>下面将会有几个问题，可以自己先想一想，如果你对这些问题都能回答上来，那么你可以选择不需要往下看</p>
+<ol>
+<li>cjs模块化定义分为几个部分</li>
+<li>模块导出机制是怎么样的（module.exports和exports有什么区别）</li>
+<li>cjs模块查找机制是怎么样的</li>
+<li>cjs模块引用是同步的还是异步的</li>
+<li>cjs是如何解决模块之间相互引用的</li>
+<li>require函数做了什么</li>
+<li>模块中并没有申明module变量，为什么可以输出一个对象</li>
+<li>自己能否实现一个类似cjs的模块</li>
+</ol>
+<h3 id="cjs模块定义"><a href="#cjs模块定义" class="headerlink" title="cjs模块定义"></a>cjs模块定义</h3><p>cjs定义模块主要分为以下3个部分</p>
+<h4 id="模块定义-导出"><a href="#模块定义-导出" class="headerlink" title="模块定义(导出)"></a>模块定义(导出)</h4><p>必须使用module.exports或exports定义模块</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> person1 = &#123;</span><br><span class="line">  <span class="attr">name</span>: <span class="string">&#x27;zgl1&#x27;</span>,</span><br><span class="line">  <span class="attr">age</span>: <span class="number">27</span>,</span><br><span class="line">  <span class="title function_">getName</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">name</span>;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="title function_">setName</span>(<span class="params">name</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> person2 = &#123;</span><br><span class="line">  <span class="attr">name</span>: <span class="string">&#x27;zgl2&#x27;</span>,</span><br><span class="line">  <span class="attr">age</span>: <span class="number">27</span>,</span><br><span class="line">  <span class="title function_">getName</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">name</span>;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="title function_">setName</span>(<span class="params">name</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 采用module.exports的方式进行模块导出</span></span><br><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  person1</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 采用exports的方式进行模块导出</span></span><br><span class="line"><span class="built_in">exports</span>.<span class="property">person2</span> = person2;</span><br></pre></td></tr></table></figure>
+
+<h4 id="模块引用（导入）"><a href="#模块引用（导入）" class="headerlink" title="模块引用（导入）"></a>模块引用（导入）</h4><p>必须使用require函数引入模块</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> person = <span class="built_in">require</span>(<span class="string">&#x27;./person&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(person.<span class="property">person2</span>, <span class="string">&#x27;person2&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<h4 id="模块标识"><a href="#模块标识" class="headerlink" title="模块标识"></a>模块标识</h4><p>本质上就是传给require函数的参数，他可以是具体的文件路径（相对路径或绝对路径），也可以是字符串，也可以是省略后缀的文件名</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 字符串</span></span><br><span class="line"><span class="keyword">const</span> react = <span class="built_in">require</span>(<span class="string">&#x27;react&#x27;</span>);</span><br><span class="line"><span class="comment">// 相对路径</span></span><br><span class="line"><span class="keyword">const</span> person = <span class="built_in">require</span>(<span class="string">&#x27;./person&#x27;</span>);</span><br><span class="line"><span class="comment">// 绝对路径</span></span><br><span class="line"><span class="keyword">const</span> methods = <span class="built_in">require</span>(<span class="string">&#x27;src/shard/index.js&#x27;</span>);</span><br><span class="line"><span class="comment">// 省略后缀的文件名</span></span><br><span class="line"><span class="keyword">const</span> components = <span class="built_in">require</span>(<span class="string">&#x27;src/components/index&#x27;</span>) </span><br></pre></td></tr></table></figure>
+
+<h3 id="模块导出机制"><a href="#模块导出机制" class="headerlink" title="模块导出机制"></a>模块导出机制</h3><h4 id="module"><a href="#module" class="headerlink" title="module"></a>module</h4><p>让那个需要导出的模块成为整个模块进行导出</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> person = &#123;</span><br><span class="line">  <span class="attr">name</span>: <span class="string">&#x27;zgl1&#x27;</span>,</span><br><span class="line">  <span class="attr">age</span>: <span class="number">27</span>,</span><br><span class="line">  <span class="title function_">getName</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">name</span>;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="title function_">setName</span>(<span class="params">name</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> person2 = &#123;</span><br><span class="line">  <span class="attr">name</span>: <span class="string">&#x27;zgl2&#x27;</span>,</span><br><span class="line">  <span class="attr">age</span>: <span class="number">27</span>,</span><br><span class="line">  <span class="title function_">getName</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">name</span>;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="title function_">setName</span>(<span class="params">name</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  person</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="exports"><a href="#exports" class="headerlink" title="exports"></a>exports</h4><ul>
+<li>让需要导出的模块成为模块的某个属性进行导出</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> person = &#123;</span><br><span class="line">  <span class="attr">name</span>: <span class="string">&#x27;zgl1&#x27;</span>,</span><br><span class="line">  <span class="attr">age</span>: <span class="number">27</span>,</span><br><span class="line">  <span class="title function_">getName</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">name</span>;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="title function_">setName</span>(<span class="params">name</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> person2 = &#123;</span><br><span class="line">  <span class="attr">name</span>: <span class="string">&#x27;zgl2&#x27;</span>,</span><br><span class="line">  <span class="attr">age</span>: <span class="number">27</span>,</span><br><span class="line">  <span class="title function_">getName</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">name</span>;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="title function_">setName</span>(<span class="params">name</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="built_in">exports</span>.<span class="property">person</span> = person</span><br></pre></td></tr></table></figure>
+
+<p>由此可见，module.expprts和exports刚开始引用的是同一个对象</p>
+<h4 id="module-exports和exports的关系"><a href="#module-exports和exports的关系" class="headerlink" title="module.exports和exports的关系"></a>module.exports和exports的关系</h4><p>在不修改module.exports的引用时，module.exports和exports指向了用一个引用对象，如果修改了module.exports,那么他们之间的引用关系就会断开</p>
+<ul>
+<li>没有修改module.exports的引用</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="variable language_">module</span>.<span class="property">exports</span> === <span class="built_in">exports</span>); <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>给exports增加了一个属性</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> person2 = &#123;</span><br><span class="line">  <span class="attr">name</span>: <span class="string">&#x27;zgl2&#x27;</span>,</span><br><span class="line">  <span class="attr">age</span>: <span class="number">27</span>,</span><br><span class="line">  <span class="title function_">getName</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">name</span>;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="title function_">setName</span>(<span class="params">name</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="built_in">exports</span>.<span class="property">person2</span> = person2;</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="variable language_">module</span>.<span class="property">exports</span> === <span class="built_in">exports</span>); <span class="comment">// true</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>修改module.exports的引用</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="variable language_">module</span>.<span class="property">exports</span> === <span class="built_in">exports</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> person1 = &#123;</span><br><span class="line">  <span class="attr">name</span>: <span class="string">&#x27;zgl1&#x27;</span>,</span><br><span class="line">  <span class="attr">age</span>: <span class="number">27</span>,</span><br><span class="line">  <span class="title function_">getName</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">name</span>;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="title function_">setName</span>(<span class="params">name</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  person</span><br><span class="line">&#125;;</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="built_in">exports</span>, <span class="string">&#x27;exprots&#x27;</span>); <span class="comment">// &#123;&#125;</span></span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="variable language_">module</span>.<span class="property">exports</span>, <span class="string">&#x27;module.exports&#x27;</span>); </span><br><span class="line"><span class="comment">/* </span></span><br><span class="line"><span class="comment">&#123;</span></span><br><span class="line"><span class="comment">  name: &#x27;zgl1&#x27;,</span></span><br><span class="line"><span class="comment">  age: 27,</span></span><br><span class="line"><span class="comment">  getName: [Function: getName],</span></span><br><span class="line"><span class="comment">  setName: [Function: setName]</span></span><br><span class="line"><span class="comment">&#125;</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"></span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="variable language_">module</span>.<span class="property">exports</span> === <span class="built_in">exports</span>); <span class="comment">// false</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="模块导入机制"><a href="#模块导入机制" class="headerlink" title="模块导入机制"></a>模块导入机制</h3><p>模块导入机制比较复杂，接下来我们一点一点的去揭开他的神秘面纱，由于这一块内容比较复杂，我们先来简单的看一下脑图</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/ceee61d2996843f8bcd0fc68981fd453~tplv-k3u1fbpfcp-zoom-1.image"></p>
+<h4 id="模块真正导入的是module-exports"><a href="#模块真正导入的是module-exports" class="headerlink" title="模块真正导入的是module.exports"></a>模块真正导入的是module.exports</h4><p>我们分别采用module.exports和exports分别导出一个对象，看看最后require引用的对象是谁</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> person1 = &#123;</span><br><span class="line">  <span class="attr">name</span>: <span class="string">&#x27;zgl1&#x27;</span>,</span><br><span class="line">  <span class="attr">age</span>: <span class="number">27</span>,</span><br><span class="line">  <span class="title function_">getName</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">name</span>;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="title function_">setName</span>(<span class="params">name</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> person2 = &#123;</span><br><span class="line">  <span class="attr">name</span>: <span class="string">&#x27;zgl2&#x27;</span>,</span><br><span class="line">  <span class="attr">age</span>: <span class="number">27</span>,</span><br><span class="line">  <span class="title function_">getName</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">name</span>;</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="title function_">setName</span>(<span class="params">name</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">name</span> = name;</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  person1</span><br><span class="line">&#125;</span><br><span class="line"><span class="built_in">exports</span>.<span class="property">person2</span> = person2;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> person = <span class="built_in">require</span>(<span class="string">&#x27;./person&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(person.<span class="property">person2</span>, <span class="string">&#x27;person2&#x27;</span>); </span><br><span class="line"><span class="comment">// undefined person2</span></span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(person.<span class="property">person1</span>, <span class="string">&#x27;person1&#x27;</span>);</span><br><span class="line"><span class="comment">/* </span></span><br><span class="line"><span class="comment">&#123;</span></span><br><span class="line"><span class="comment">  name: &#x27;zgl1&#x27;,</span></span><br><span class="line"><span class="comment">  age: 27,</span></span><br><span class="line"><span class="comment">  getName: [Function: getName],</span></span><br><span class="line"><span class="comment">  setName: [Function: setName]</span></span><br><span class="line"><span class="comment">&#125; person1 </span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 实际导出的是module.exports</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="模块导入是值传递（浅复制）"><a href="#模块导入是值传递（浅复制）" class="headerlink" title="模块导入是值传递（浅复制）"></a>模块导入是值传递（浅复制）</h4><ul>
+<li>对于基本数据类型，模块导入复制的是数值</li>
+</ul>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">let number1 = 1;</span><br><span class="line"></span><br><span class="line">module.exports = number1;</span><br><span class="line"></span><br><span class="line">setTimeout(() =&gt; &#123;</span><br><span class="line">  console.log(number1,&#x27;我是暴露出去的number1&#x27;) // 1</span><br><span class="line">&#125;,2000)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">let number1 = require(&#x27;./propagation&#x27;);</span><br><span class="line"></span><br><span class="line">number1 = 2;</span><br><span class="line"></span><br><span class="line">setTimeout(() =&gt; &#123;</span><br><span class="line">  console.log(number1, &#x27;我是引用被修改后的number1&#x27;)// 2</span><br><span class="line">&#125;,1000)</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>对于引用数据类型，模块导入复制的是引用地址</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> obj = &#123;</span><br><span class="line">  <span class="attr">number1</span>: <span class="number">1</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = obj;</span><br><span class="line"></span><br><span class="line"><span class="built_in">setTimeout</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">  <span class="variable language_">console</span>.<span class="title function_">log</span>(obj, <span class="string">&#x27;我是暴露出去的obj&#x27;</span>) <span class="comment">// &#123;number1: 2&#125;</span></span><br><span class="line">&#125;,<span class="number">1000</span>)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">const obj = require(&#x27;./propagation&#x27;);</span><br><span class="line"></span><br><span class="line">obj.number1 = 2;</span><br><span class="line"></span><br><span class="line">setTimeout(() =&gt; &#123;</span><br><span class="line">  console.log(obj, &#x27;我是引用的obj&#x27;) // &#123;number1: 2&#125;</span><br><span class="line">&#125;,2000)</span><br></pre></td></tr></table></figure>
+
+<h4 id="require函数的查询机制"><a href="#require函数的查询机制" class="headerlink" title="require函数的查询机制"></a>require函数的查询机制</h4><h5 id="模块路径是文件名"><a href="#模块路径是文件名" class="headerlink" title="模块路径是文件名"></a>模块路径是文件名</h5><ul>
+<li>模块路径未省略后缀名</li>
+</ul>
+<p>如果当前require引用的模块标识是完整的，那么就会按照当前标识符进行查找</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">extname</span>: <span class="string">&#x27;js&#x27;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>模块路径省略后缀名</p>
+<ul>
+<li>优先查找是否存在模块名.js文件</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">extname</span>: <span class="string">&#x27;js&#x27;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;js&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;extname&quot;</span>: <span class="string">&quot;json&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">extname</span>: <span class="string">&#x27;node&#x27;</span></span><br><span class="line">&#125; <span class="comment">// 该文件为二进制文件，会报错，但是不会报查找不到报错</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> extnameObj = <span class="built_in">require</span>(<span class="string">&#x27;./require&#x27;</span>);</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(extnameObj, <span class="string">&#x27;444&#x27;</span>);</span><br><span class="line"><span class="comment">// &#123; extname: &#x27;js&#x27; &#125;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>如果未找到模块名.js，其次查找模块名.json</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">extname</span>: <span class="string">&#x27;js&#x27;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;js&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;extname&quot;</span>: <span class="string">&quot;json&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">extname</span>: <span class="string">&#x27;node&#x27;</span></span><br><span class="line">&#125; <span class="comment">// 该文件为二进制文件，会报错，但是不会报查找不到报错</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> extnameObj = <span class="built_in">require</span>(<span class="string">&#x27;./require&#x27;</span>);</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(extnameObj, <span class="string">&#x27;444&#x27;</span>);</span><br><span class="line"><span class="comment">// &#123; extname: &#x27;json&#x27; &#125;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>如果未找到模块名.json，其次查找模块名.node</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">extname</span>: <span class="string">&#x27;js&#x27;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;js&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;extname&quot;</span>: <span class="string">&quot;json&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">extname</span>: <span class="string">&#x27;node&#x27;</span></span><br><span class="line">&#125; <span class="comment">// 该文件为二进制文件，会报错，但是不会报查找不到报错</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> extnameObj = <span class="built_in">require</span>(<span class="string">&#x27;./require&#x27;</span>);</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(extnameObj, <span class="string">&#x27;444&#x27;</span>);</span><br><span class="line"><span class="comment">// return process.dlopen(module, path.toNamespacedPath(filename));</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>如果未查找到模块名.node，则报错</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">extname</span>: <span class="string">&#x27;js&#x27;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;js&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;extname&quot;</span>: <span class="string">&quot;json&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">extname</span>: <span class="string">&#x27;node&#x27;</span></span><br><span class="line">&#125; <span class="comment">// 该文件为二进制文件，会报错，但是不会报查找不到报错</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> extnameObj = <span class="built_in">require</span>(<span class="string">&#x27;./require&#x27;</span>);</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(extnameObj, <span class="string">&#x27;444&#x27;</span>);</span><br><span class="line"><span class="comment">// Error: Cannot find module &#x27;./require&#x27;</span></span><br></pre></td></tr></table></figure>
+
+<h5 id="模块路径是文件夹名"><a href="#模块路径是文件夹名" class="headerlink" title="模块路径是文件夹名"></a>模块路径是文件夹名</h5><ul>
+<li>先判断该模块路径是否存在，如果不存在报错</li>
+<li>如果模块路径存在，查找当前文件夹中是否存在package.json</li>
+</ul>
+<!---->
+
+<ul>
+<li><ul>
+<li>如果存在package.json,判断package.json是否有main字段</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">    <span class="attr">extname</span>: <span class="string">&#x27;我是require文件中的index.js&#x27;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;main&quot;</span>: <span class="string">&quot;main.js&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">extname</span>: <span class="string">&#x27;我是通过package中指定的路径&#x27;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> extname = <span class="built_in">require</span>(<span class="string">&#x27;./require&#x27;</span>);</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(extname, <span class="string">&#x27;extname&#x27;</span>); <span class="comment">// &#123; extname: &#x27;我是package中的main.js&#x27; &#125;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><ul>
+<li><ul>
+<li>如果不存在main字段则依次查找当前目录是否存在index.js,index.json,index.node</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">    <span class="attr">extname</span>: <span class="string">&#x27;我是require文件中的index.js&#x27;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;main1&quot;</span>: <span class="string">&quot;main.js&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">extname</span>: <span class="string">&#x27;我是通过package中指定的路径&#x27;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> extname = <span class="built_in">require</span>(<span class="string">&#x27;./require&#x27;</span>);</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(extname, <span class="string">&#x27;extname&#x27;</span>); <span class="comment">// &#123; extname: &#x27;我是require文件中的index.js&#x27; &#125;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><ul>
+<li>如果不存在package.json, 依次查找当前文件是否存在index.js,index.json,index.node</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">    <span class="attr">extname</span>: <span class="string">&#x27;我是require文件中的index.js&#x27;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">&quot;main1&quot;</span>: <span class="string">&quot;main.js&quot;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">module.exports = &#123;</span><br><span class="line">  extname: &#x27;我是通过package中指定的路径&#x27;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> extname = <span class="built_in">require</span>(<span class="string">&#x27;./require&#x27;</span>);</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(extname, <span class="string">&#x27;extname&#x27;</span>); <span class="comment">// &#123; extname: &#x27;我是require文件中的index.js&#x27; &#125;</span></span><br></pre></td></tr></table></figure>
+
+<h5 id="模块路径是字符串（node-modules查找）"><a href="#模块路径是字符串（node-modules查找）" class="headerlink" title="模块路径是字符串（node_modules查找）"></a>模块路径是字符串（node_modules查找）</h5><ul>
+<li>判读模块路径是否为内置模块</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">fs</span>: <span class="string">&#x27;自定义的fs&#x27;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> fs = <span class="built_in">require</span>(<span class="string">&#x27;fs&#x27;</span>);</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(fs, <span class="string">&#x27;6666&#x27;</span>); <span class="comment">// node内置的fs模块</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>如果模块路径是内置模块，则直接加载</li>
+<li>如果文件不是内置模块，那么查找和当前引用所在的文件下是否存在node_modules</li>
+<li>如果存在则去node_modules中按照模块路径是文件夹的规则进行查找</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">fs</span>: <span class="string">&#x27;自定义的fs&#x27;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> fs = <span class="built_in">require</span>(<span class="string">&#x27;fs1&#x27;</span>);</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(fs, <span class="string">&#x27;6666&#x27;</span>); <span class="comment">// &#123; fs: &#x27;自定义的fs&#x27; &#125;</span></span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>如果不存在，则返回上一级目录继续查找，一直查找不到则一直返回，直到返回根node_modules</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">fs</span>: <span class="string">&#x27;自定义的fs&#x27;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">fs</span>: <span class="string">&#x27;我是common下面的node_modules&#x27;</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> fs = <span class="built_in">require</span>(<span class="string">&#x27;fs1&#x27;</span>);</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(fs, <span class="string">&#x27;6666&#x27;</span>); <span class="comment">// &#123; fs: &#x27;我是common下面的node_modules&#x27; &#125;</span></span><br></pre></td></tr></table></figure>
+
+<p>讲了这么模块查找机制总结一下</p>
+<p>模块的导入机制</p>
+<ul>
+<li><strong>核心模块</strong>，如http、fs、path等</li>
+<li><strong>相对路径文件模块</strong>，以.或者..开头的</li>
+<li><strong>绝对路径文件模块</strong>，以&#x2F;开头</li>
+<li><strong>非路径模块形式的文件模块</strong>，比如自定义模块</li>
+</ul>
+<p>针对不同的标识符，Node会区别对待</p>
+<ul>
+<li>文件扩展名分析 如果require()传递的标识是不包含文件的扩展名，那么Node会按.js、.json、.node的次序不全扩展名，而后依次尝试定位文件。</li>
+<li>目录分析和包 在分析标识符的过程中，可能没有找到对应的文件，但却得到一个目录，此时Node会将目录当做一个包来处理</li>
+</ul>
+<p>那么，Node首先在当前目录查找package.json，通过JSON.parse()解析出包的描述对象，从中取出main属性指定的文件名进行定位，如果文件缺少扩展名，将会进入到扩展名分析的步骤。而如果main属性指定的文件名错误或压根没有package.json文件，Node就会把index当做默认文件名，然后依次查找index.js、index.json、index.node</p>
+<p>如果在目录分析过程中没有成功定位，则自定义模块进入下一个模块路径进行查找（node_modules查找规则）。如果模块路径数组都遍历完依然没找到目标文件，则抛出查找失败的异常</p>
+<h3 id="模块加载机制"><a href="#模块加载机制" class="headerlink" title="模块加载机制"></a>模块加载机制</h3><p>内置模块是由Node.js官方提供，内置模块的加载优先级是最高的。</p>
+<h4 id="自定义模块的加载机制"><a href="#自定义模块的加载机制" class="headerlink" title="自定义模块的加载机制"></a>自定义模块的加载机制</h4><p>使用require（）加载自定义模块时，必须指定以.&#x2F;或..&#x2F;开头的文件路径，如果没有指定，就会按内置模块或第三方模块进行加载；</p>
+<p>如果缺省文件后缀时，先会按照具体的文件路径加载，然后会自动补齐js后缀进行加载，如果还是没找到，就补齐json后缀进行加载，还是没找到，就会补上node后缀进行查找，如果还是没查到，报错。</p>
+<h4 id="第三方模块的加载机制"><a href="#第三方模块的加载机制" class="headerlink" title="第三方模块的加载机制"></a>第三方模块的加载机制</h4><p>首先一般会先尝试在node_modules文件夹进行加载，如果没有，就会翻到上一层目录中去查找，如果还是都没有找到，就报错</p>
+<h4 id="以目录作为模块"><a href="#以目录作为模块" class="headerlink" title="以目录作为模块"></a>以目录作为模块</h4><p>首先在package.json中查找main属性，以main属性指向的入口作为require入口，如果没有main属性，就会以index.js进行加载。</p>
+<h3 id="模块缓存机制"><a href="#模块缓存机制" class="headerlink" title="模块缓存机制"></a>模块缓存机制</h3><p>Node.js 模块不会被重复加载，这是因为 Node.js 通过文件名缓存所有加载过的文件模块，所以以后再访问到时就不会重新加载了。Node.js 是根据实际文件名缓存的， 而不是 require() 提供的参数缓存的， 也就是说即使你分别通过require(‘react’) 和 require(‘.&#x2F;node_modules&#x2F;react’) 加载两次，也不会重复加载，因为尽管两次参数不同，解析到的文件却是同一个。正是这一机制的存在很好的解决了模块相互之间引用导致的模块依赖问题</p>
+<h3 id="实现模块加载器"><a href="#实现模块加载器" class="headerlink" title="实现模块加载器"></a>实现模块加载器</h3><h4 id="module是什么"><a href="#module是什么" class="headerlink" title="module是什么"></a>module是什么</h4><p>我们来输出看一下module 是什么东西</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">number</span>: <span class="number">1</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="variable language_">module</span>, <span class="string">&#x27;module&#x27;</span>)</span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">Module &#123;</span></span><br><span class="line"><span class="comment">  id: &#x27;.&#x27;,</span></span><br><span class="line"><span class="comment">  path: &#x27;/Users/zhuguanglong/Desktop/前端工程化/模块化/commonjs/test&#x27;,</span></span><br><span class="line"><span class="comment">  exports: &#123; number: 1 &#125;,</span></span><br><span class="line"><span class="comment">  parent: null,</span></span><br><span class="line"><span class="comment">  filename: &#x27;/Users/zhuguanglong/Desktop/前端工程化/模块化/commonjs/test/index.js&#x27;,</span></span><br><span class="line"><span class="comment">  loaded: false,</span></span><br><span class="line"><span class="comment">  children: [],</span></span><br><span class="line"><span class="comment">  paths: [</span></span><br><span class="line"><span class="comment">    &#x27;/Users/zhuguanglong/Desktop/前端工程化/模块化/commonjs/test/node_modules&#x27;,</span></span><br><span class="line"><span class="comment">    &#x27;/Users/zhuguanglong/Desktop/前端工程化/模块化/commonjs/node_modules&#x27;,</span></span><br><span class="line"><span class="comment">    &#x27;/Users/zhuguanglong/Desktop/前端工程化/模块化/node_modules&#x27;,</span></span><br><span class="line"><span class="comment">    &#x27;/Users/zhuguanglong/Desktop/前端工程化/node_modules&#x27;,</span></span><br><span class="line"><span class="comment">    &#x27;/Users/zhuguanglong/Desktop/node_modules&#x27;,</span></span><br><span class="line"><span class="comment">    &#x27;/Users/zhuguanglong/node_modules&#x27;,</span></span><br><span class="line"><span class="comment">    &#x27;/Users/node_modules&#x27;,</span></span><br><span class="line"><span class="comment">    &#x27;/node_modules&#x27;</span></span><br><span class="line"><span class="comment">  ]</span></span><br><span class="line"><span class="comment">&#125;</span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></figure>
+
+<p>我们发现module其实是一个对象，我们接下来分析一下module对象上的各属性</p>
+<p>module对象上的属性</p>
+<ul>
+<li>id 模块唯一标识(一般是当前文件所在的路径）</li>
+<li>path 模块所在的文件夹的路径</li>
+<li>exports 模块的导出对象</li>
+<li>parent</li>
+<li>filename 文件绝对路径</li>
+<li>loaded 是否第一次加载</li>
+<li>children 所被加载的其他模块</li>
+<li>paths 当前文件假想的所在node_modules的路径</li>
+</ul>
+<p>搞清楚了module对象上都有哪些属性以后我们就可以着手创建模块对象了</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> path = <span class="built_in">require</span>(<span class="string">&#x27;path&#x27;</span>);</span><br><span class="line"><span class="keyword">const</span> fs = <span class="built_in">require</span>(<span class="string">&#x27;fs&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Module</span> &#123;</span><br><span class="line">  private <span class="attr">id</span>: string;</span><br><span class="line">  private <span class="attr">path</span>: string;</span><br><span class="line">  public <span class="attr">exports</span>: <span class="title class_">Record</span>&lt;string, any&gt;;</span><br><span class="line">  private <span class="attr">parent</span>: <span class="literal">null</span> | <span class="title class_">Array</span>&lt;any&gt;;</span><br><span class="line">  private <span class="attr">filename</span>: string;</span><br><span class="line">  public <span class="attr">loaded</span>: boolean;</span><br><span class="line">  public <span class="attr">children</span>: <span class="title class_">Module</span>[];</span><br><span class="line">  private <span class="attr">paths</span>: string[];</span><br><span class="line"></span><br><span class="line">  <span class="title function_">constructor</span>(<span class="params">filename: string</span>) &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">path</span> = path.<span class="title function_">resolve</span>(<span class="string">&#x27;.&#x27;</span>);</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">paths</span> = <span class="title function_">resolvePaths</span>(path);</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">loaded</span> = <span class="literal">false</span>;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">filename</span> = filename;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">id</span> = filename;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">parent</span> = <span class="literal">null</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> <span class="variable constant_">NODE_MODULES</span> = <span class="string">&#x27;/node_modules&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> path &#123; string &#125; 文件路径;</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@returns</span> paths &#123;string[]&#125; 文件可能存在的路径；</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> <span class="variable">zgl</span></span></span><br><span class="line"><span class="comment"> * <span class="doctag">@desprition</span> 获取文件路径数组</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">resolvePaths</span>(<span class="params">path: string</span>): string[] &#123;</span><br><span class="line">  <span class="keyword">const</span> <span class="attr">newPaths</span>: string[] = [];</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">if</span> (<span class="keyword">typeof</span> path !== <span class="string">&#x27;string&#x27;</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> newPaths;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> paths = path.<span class="title function_">split</span>(<span class="string">&#x27;/&#x27;</span>);</span><br><span class="line">  <span class="keyword">let</span> <span class="attr">filepath</span>: string  = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">let</span> i = <span class="number">0</span>; i &lt; paths.<span class="property">length</span>; i++) &#123;</span><br><span class="line">    <span class="keyword">if</span> (i &gt; <span class="number">0</span>) &#123;</span><br><span class="line">      filepath += <span class="string">&#x27;/&#x27;</span> + paths[i];</span><br><span class="line">    &#125; </span><br><span class="line">      newPaths.<span class="title function_">push</span>(<span class="string">`<span class="subst">$&#123;filepath&#125;</span><span class="subst">$&#123;NODE_MODULES&#125;</span>`</span>);   </span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> newPaths;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="加载模块"><a href="#加载模块" class="headerlink" title="加载模块"></a>加载模块</h4><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">tryModuleLoad</span>(<span class="params"><span class="variable language_">module</span>: Module</span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> extension = <span class="title function_">extname</span>(<span class="variable language_">module</span>.<span class="property">filename</span>);</span><br><span class="line">    extensions[extension](<span class="variable language_">module</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="将路径转化为绝对路径"><a href="#将路径转化为绝对路径" class="headerlink" title="将路径转化为绝对路径"></a>将路径转化为绝对路径</h4><p>不管模块标识是怎么样的，最后都会将其转化为绝对路径</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> &#123; resolve &#125; = <span class="built_in">require</span>(<span class="string">&#x27;path&#x27;</span>);</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">resolveFilename</span>(<span class="params">path: stirng</span>): string &#123;</span><br><span class="line">  <span class="keyword">const</span> absoultPath = <span class="title function_">resolve</span>(__dirname, path);</span><br><span class="line">  <span class="keyword">return</span> absoultPath;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="获取文件后缀"><a href="#获取文件后缀" class="headerlink" title="获取文件后缀"></a>获取文件后缀</h4><p>由于针对以.js结尾的和.json结尾和.node结尾的逻辑不一样，因此我们需要获取文件后缀</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">getExtision</span>(<span class="params">path: string</span>): stirng &#123;</span><br><span class="line">  <span class="keyword">const</span> extision = path.<span class="title function_">extname</span>(path);</span><br><span class="line">  <span class="keyword">return</span> extision;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="处理不一样后缀的逻辑"><a href="#处理不一样后缀的逻辑" class="headerlink" title="处理不一样后缀的逻辑"></a>处理不一样后缀的逻辑</h4><ul>
+<li>.js: 将代码包裹在一个匿名自执行函数中</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> wrapper = [</span><br><span class="line">  <span class="string">&#x27;(function(exports, module, require, __dirname, __filename))&#123;&#x27;</span>,</span><br><span class="line">  <span class="string">&#x27;&#125;)&#x27;</span></span><br><span class="line">];</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> extensions = &#123;</span><br><span class="line">  <span class="string">&#x27;.js&#x27;</span>(<span class="variable language_">module</span>) &#123;</span><br><span class="line">    <span class="keyword">const</span> content = <span class="title function_">readFileSync</span>(<span class="variable language_">module</span>.<span class="property">filename</span>, <span class="string">&#x27;utf-8&#x27;</span>);</span><br><span class="line">    <span class="keyword">const</span> fnStr = wrapper[<span class="number">0</span>] + content + wrapper[<span class="number">1</span>];</span><br><span class="line">    <span class="keyword">const</span> fn = <span class="title function_">runInThisContext</span>(fnStr);</span><br><span class="line">    <span class="keyword">const</span> &#123; <span class="built_in">exports</span>, path, filename &#125; = <span class="variable language_">module</span>;</span><br><span class="line">    <span class="comment">// 将this绑定给暴露出来的模块</span></span><br><span class="line">    fn.<span class="title function_">call</span>(<span class="built_in">exports</span>, <span class="built_in">exports</span>, <span class="variable language_">module</span>, myRequire, path, filename)</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>.json: 将json进行序列化</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> extensions = &#123;</span><br><span class="line">  <span class="string">&#x27;.json&#x27;</span>(<span class="variable language_">module</span>) &#123;</span><br><span class="line">    <span class="keyword">const</span> content = <span class="title function_">readFileSync</span>(<span class="variable language_">module</span>.<span class="property">filename</span>, <span class="string">&#x27;utf-8&#x27;</span>);</span><br><span class="line">    <span class="keyword">const</span> contentObj =  <span class="title class_">JSON</span>.<span class="title function_">parse</span>(content);</span><br><span class="line">    <span class="variable language_">module</span>.<span class="property">exports</span> = contentObj;</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>.node: 利用process.dlopen进行执行</li>
+</ul>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> extensions = &#123;</span><br><span class="line">  <span class="string">&#x27;.node&#x27;</span>(<span class="variable language_">module</span>) &#123;</span><br><span class="line">    <span class="keyword">const</span> &#123; filename &#125; = <span class="variable language_">module</span>;</span><br><span class="line">    <span class="keyword">return</span> <span class="title function_">dlopen</span>(<span class="variable language_">module</span>, <span class="title function_">toNamespacedPath</span>(filename));</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="string">``</span><span class="string">`js</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">#### 尝试添加后缀</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">如果文件是省略文件后缀的形式给文件名分别添加.js，.json, .node 判断文件是否存在</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">`</span><span class="string">``</span>js</span><br><span class="line"><span class="keyword">const</span> &#123; accessSync &#125; = <span class="built_in">require</span>(<span class="string">&#x27;fs&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">findExt</span>(<span class="params">absolutePath: sting</span>): sting &#123;</span><br><span class="line">  <span class="keyword">const</span> extNames = <span class="title class_">Object</span>.<span class="title function_">keys</span>(extensions);</span><br><span class="line">  <span class="keyword">let</span> index = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">if</span>(extNames.<span class="property">length</span> === index) &#123;</span><br><span class="line">      <span class="comment">// 如果没有找到文件名，那么就去找文件夹</span></span><br><span class="line">    &#125;</span><br><span class="line">    <span class="title function_">accessSync</span>(absolutePath + extNames[index]);</span><br><span class="line">    <span class="keyword">return</span> absolutePath + extNames[index];</span><br><span class="line">  &#125;<span class="keyword">catch</span>(e) &#123;</span><br><span class="line">    index++;</span><br><span class="line">    <span class="title function_">findExt</span>(absolutePath + extNames[index]);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="路径是文件"><a href="#路径是文件" class="headerlink" title="路径是文件"></a>路径是文件</h4><p>如果当前路径为文件，那么先判断当前文件下是否存在package.json, 如果存在解析main字段所对应的文件路径，如果不存在package.json,那么尝试寻找index.js，index.json, index.node</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(extNames.<span class="property">length</span> === index) &#123;</span><br><span class="line">      <span class="comment">// 如果没有找到文件名，那么就去找文件夹</span></span><br><span class="line">  <span class="title function_">findDirExt</span>(absoultPath);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">findDirExt</span>(<span class="params">absoultPath: string</span>): string &#123;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">     <span class="title function_">accessSync</span>(<span class="title function_">join</span>(absolutePath, <span class="string">&#x27;package.json&#x27;</span>));</span><br><span class="line">     <span class="keyword">const</span> content = <span class="title function_">findExt</span>(<span class="title function_">join</span>(absolutePath, <span class="string">&#x27;./package.json&#x27;</span>));</span><br><span class="line">      <span class="keyword">const</span> contentObj = <span class="title class_">JSON</span>.<span class="title function_">parse</span>(content);</span><br><span class="line">      <span class="keyword">if</span> (<span class="string">&#x27;main&#x27;</span> <span class="keyword">in</span> contentObj) &#123;</span><br><span class="line">        absolutePath = <span class="title function_">findExt</span>(<span class="title function_">resolve</span>(absolutePath, contentObj[main]));</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        absolutePath = <span class="title function_">findExt</span>(<span class="title function_">resolve</span>(absolutePath, <span class="string">&#x27;index&#x27;</span>));</span><br><span class="line">      &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  &#125; <span class="keyword">catch</span>(e) &#123;</span><br><span class="line">    absolutePath = <span class="title function_">findExt</span>(<span class="title function_">resolve</span>(absolutePath, <span class="string">&#x27;index&#x27;</span>));</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="路径是模块"><a href="#路径是模块" class="headerlink" title="路径是模块"></a>路径是模块</h4><h6 id="内置模块"><a href="#内置模块" class="headerlink" title="内置模块"></a>内置模块</h6><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (naviteModule.<span class="title function_">includes</span>(absolutePath)) &#123;</span><br><span class="line">      <span class="comment">// 内置模块对应的二机制文件</span></span><br><span class="line">      absolutePath = <span class="string">&#x27;内置模块路径&#x27;</span>;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<h6 id="自定义模块"><a href="#自定义模块" class="headerlink" title="自定义模块"></a>自定义模块</h6><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> paths = <span class="title function_">resolvePaths</span>(absolutePath);</span><br><span class="line">      <span class="keyword">let</span> i = paths.<span class="property">length</span> - <span class="number">1</span>;</span><br><span class="line">      <span class="keyword">while</span> (i &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">if</span> (<span class="title function_">findExt</span>(paths[i)) &#123;</span><br><span class="line">          absolutePath = <span class="title function_">findExt</span>(paths[i]);</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">          </span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">const</span> path = <span class="title function_">findDirExt</span>(paths[i]);</span><br><span class="line">        <span class="keyword">if</span> (path) &#123;</span><br><span class="line">          absolutePath = path;</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        i--;</span><br><span class="line">      &#125;</span><br></pre></td></tr></table></figure>
+
+<h4 id="完整的require函数逻辑"><a href="#完整的require函数逻辑" class="headerlink" title="完整的require函数逻辑"></a>完整的require函数逻辑</h4><p>require函数主要是用来加载模块的</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> <span class="variable constant_">CHAR_DOT</span> = <span class="string">&#x27;.&#x27;</span>;</span><br><span class="line"><span class="keyword">const</span> <span class="variable constant_">CHAR_FORWARD_SLASH</span> = <span class="string">&#x27;/&#x27;</span></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">require</span>(<span class="params">moduleId</span>) &#123;</span><br><span class="line">  <span class="comment">// 获取文件绝对路径</span></span><br><span class="line">  <span class="keyword">let</span> absolutePath = <span class="title function_">resolve</span>(__dirname, moduleId);</span><br><span class="line">  <span class="keyword">let</span> oldAbsolutePath = absolutePath;</span><br><span class="line">  <span class="keyword">const</span> extension = <span class="title function_">extname</span>(absolutePath);</span><br><span class="line">  <span class="keyword">if</span> (<span class="title class_">Module</span>.<span class="title function_">getCacheByModuleId</span>(absolutePath)) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="title class_">Module</span>.<span class="title function_">getCacheByModuleId</span>(absolutePath);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 如果模块后缀不存在那么加判断加载模块</span></span><br><span class="line">  <span class="keyword">if</span> (!extension) &#123;</span><br><span class="line">    absolutePath = <span class="title function_">findExt</span>(absolutePath);</span><br><span class="line">    <span class="comment">// 不是完整的路径</span></span><br><span class="line">  &#125;  <span class="keyword">else</span> <span class="keyword">if</span> (absolutePath.<span class="title function_">charCodeAt</span>(<span class="number">0</span>) !== <span class="variable constant_">CHAR_DOT</span> ||</span><br><span class="line">       absolutePath.<span class="title function_">charCodeAt</span>(<span class="number">0</span>) !== <span class="variable constant_">CHAR_FORWARD_SLASH</span>) &#123;</span><br><span class="line">    <span class="comment">// 内置模块</span></span><br><span class="line">    <span class="keyword">if</span> (naviteModule.<span class="title function_">includes</span>(absolutePath)) &#123;</span><br><span class="line">      <span class="comment">// 内置模块对应的二机制文件</span></span><br><span class="line">      absolutePath = <span class="string">&#x27;内置模块路径&#x27;</span>;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="comment">// 第三方定义的模块</span></span><br><span class="line">      <span class="keyword">const</span> paths = <span class="title function_">resolvePaths</span>(absolutePath);</span><br><span class="line">      <span class="keyword">let</span> i = paths.<span class="property">length</span> - <span class="number">1</span>;</span><br><span class="line">      <span class="keyword">while</span> (i &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">const</span> path = <span class="built_in">require</span>(paths[i]);</span><br><span class="line">        <span class="keyword">if</span> (path) &#123;</span><br><span class="line">          absolutePath = path;</span><br><span class="line">          <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        i--;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 加载模块</span></span><br><span class="line">  <span class="comment">// 模块加载完以后才创建一个模块</span></span><br><span class="line">  <span class="keyword">const</span> <span class="variable language_">module</span> = <span class="keyword">new</span> <span class="title class_">Module</span>(absolutePath);</span><br><span class="line">  <span class="title class_">Module</span>.<span class="title function_">setCacheByModuleId</span>(absolutePath, <span class="variable language_">module</span>);</span><br><span class="line">  <span class="variable language_">module</span>.<span class="property">loade</span> = <span class="literal">true</span>;</span><br><span class="line">  <span class="variable language_">module</span>.<span class="property">children</span>.<span class="title function_">push</span>(absolutePath);</span><br><span class="line">  <span class="title function_">tryModuleLoad</span>(<span class="variable language_">module</span>);</span><br><span class="line">  <span class="comment">// 返回module.exports</span></span><br><span class="line">  <span class="keyword">return</span> <span class="variable language_">module</span>.<span class="property">exports</span>;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/flex%E5%B8%83%E5%B1%80/" rel="tag"># flex布局</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/01/17/promise%E6%8F%AD%E7%A7%98/" rel="prev" title="promise揭秘">
+      <i class="fa fa-chevron-left"></i> promise揭秘
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/01/17/vue3%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF/" rel="next" title="vue3设计思路">
+      vue3设计思路 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#cjs%E6%A8%A1%E5%9D%97%E5%AE%9A%E4%B9%89"><span class="nav-number">1.1.</span> <span class="nav-text">cjs模块定义</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E5%AE%9A%E4%B9%89-%E5%AF%BC%E5%87%BA"><span class="nav-number">1.1.1.</span> <span class="nav-text">模块定义(导出)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E5%BC%95%E7%94%A8%EF%BC%88%E5%AF%BC%E5%85%A5%EF%BC%89"><span class="nav-number">1.1.2.</span> <span class="nav-text">模块引用（导入）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E6%A0%87%E8%AF%86"><span class="nav-number">1.1.3.</span> <span class="nav-text">模块标识</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E5%AF%BC%E5%87%BA%E6%9C%BA%E5%88%B6"><span class="nav-number">1.2.</span> <span class="nav-text">模块导出机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#module"><span class="nav-number">1.2.1.</span> <span class="nav-text">module</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#exports"><span class="nav-number">1.2.2.</span> <span class="nav-text">exports</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#module-exports%E5%92%8Cexports%E7%9A%84%E5%85%B3%E7%B3%BB"><span class="nav-number">1.2.3.</span> <span class="nav-text">module.exports和exports的关系</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E5%AF%BC%E5%85%A5%E6%9C%BA%E5%88%B6"><span class="nav-number">1.3.</span> <span class="nav-text">模块导入机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E7%9C%9F%E6%AD%A3%E5%AF%BC%E5%85%A5%E7%9A%84%E6%98%AFmodule-exports"><span class="nav-number">1.3.1.</span> <span class="nav-text">模块真正导入的是module.exports</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E5%AF%BC%E5%85%A5%E6%98%AF%E5%80%BC%E4%BC%A0%E9%80%92%EF%BC%88%E6%B5%85%E5%A4%8D%E5%88%B6%EF%BC%89"><span class="nav-number">1.3.2.</span> <span class="nav-text">模块导入是值传递（浅复制）</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#require%E5%87%BD%E6%95%B0%E7%9A%84%E6%9F%A5%E8%AF%A2%E6%9C%BA%E5%88%B6"><span class="nav-number">1.3.3.</span> <span class="nav-text">require函数的查询机制</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E8%B7%AF%E5%BE%84%E6%98%AF%E6%96%87%E4%BB%B6%E5%90%8D"><span class="nav-number">1.3.3.1.</span> <span class="nav-text">模块路径是文件名</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E8%B7%AF%E5%BE%84%E6%98%AF%E6%96%87%E4%BB%B6%E5%A4%B9%E5%90%8D"><span class="nav-number">1.3.3.2.</span> <span class="nav-text">模块路径是文件夹名</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E8%B7%AF%E5%BE%84%E6%98%AF%E5%AD%97%E7%AC%A6%E4%B8%B2%EF%BC%88node-modules%E6%9F%A5%E6%89%BE%EF%BC%89"><span class="nav-number">1.3.3.3.</span> <span class="nav-text">模块路径是字符串（node_modules查找）</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6"><span class="nav-number">1.4.</span> <span class="nav-text">模块加载机制</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%A8%A1%E5%9D%97%E7%9A%84%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6"><span class="nav-number">1.4.1.</span> <span class="nav-text">自定义模块的加载机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AC%AC%E4%B8%89%E6%96%B9%E6%A8%A1%E5%9D%97%E7%9A%84%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6"><span class="nav-number">1.4.2.</span> <span class="nav-text">第三方模块的加载机制</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%A5%E7%9B%AE%E5%BD%95%E4%BD%9C%E4%B8%BA%E6%A8%A1%E5%9D%97"><span class="nav-number">1.4.3.</span> <span class="nav-text">以目录作为模块</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E7%BC%93%E5%AD%98%E6%9C%BA%E5%88%B6"><span class="nav-number">1.5.</span> <span class="nav-text">模块缓存机制</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E6%A8%A1%E5%9D%97%E5%8A%A0%E8%BD%BD%E5%99%A8"><span class="nav-number">1.6.</span> <span class="nav-text">实现模块加载器</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#module%E6%98%AF%E4%BB%80%E4%B9%88"><span class="nav-number">1.6.1.</span> <span class="nav-text">module是什么</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD%E6%A8%A1%E5%9D%97"><span class="nav-number">1.6.2.</span> <span class="nav-text">加载模块</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%B0%86%E8%B7%AF%E5%BE%84%E8%BD%AC%E5%8C%96%E4%B8%BA%E7%BB%9D%E5%AF%B9%E8%B7%AF%E5%BE%84"><span class="nav-number">1.6.3.</span> <span class="nav-text">将路径转化为绝对路径</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%8E%B7%E5%8F%96%E6%96%87%E4%BB%B6%E5%90%8E%E7%BC%80"><span class="nav-number">1.6.4.</span> <span class="nav-text">获取文件后缀</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E4%B8%8D%E4%B8%80%E6%A0%B7%E5%90%8E%E7%BC%80%E7%9A%84%E9%80%BB%E8%BE%91"><span class="nav-number">1.6.5.</span> <span class="nav-text">处理不一样后缀的逻辑</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B7%AF%E5%BE%84%E6%98%AF%E6%96%87%E4%BB%B6"><span class="nav-number">1.6.6.</span> <span class="nav-text">路径是文件</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B7%AF%E5%BE%84%E6%98%AF%E6%A8%A1%E5%9D%97"><span class="nav-number">1.6.7.</span> <span class="nav-text">路径是模块</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#%E5%86%85%E7%BD%AE%E6%A8%A1%E5%9D%97"><span class="nav-number">1.6.7.0.1.</span> <span class="nav-text">内置模块</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%A8%A1%E5%9D%97"><span class="nav-number">1.6.7.0.2.</span> <span class="nav-text">自定义模块</span></a></li></ol></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AE%8C%E6%95%B4%E7%9A%84require%E5%87%BD%E6%95%B0%E9%80%BB%E8%BE%91"><span class="nav-number">1.6.8.</span> <span class="nav-text">完整的require函数逻辑</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">朱广龙</p>
+  <div class="site-description" itemprop="description">定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">朱广龙</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

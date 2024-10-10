@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="js 模块化进阶对编译原理不熟悉的建议可以将探秘esmoudle放在熟悉编译相关知识以后再来看探秘esmoudle js 模块发展历程浏览器加载script在浏览器发展早期通过srcpit标签进行加载外部嵌入的script以及html页面内部书写js 123456&lt;!-- 页面内嵌的脚本 --&gt;&lt;script type&#x3D;&quot;application&#x2F;javascript&amp;q">
+<meta property="og:type" content="article">
+<meta property="og:title" content="模块化进阶">
+<meta property="og:url" content="http://example.com/2022/03/01/%E6%A8%A1%E5%9D%97%E5%8C%96%E8%BF%9B%E9%98%B6/index.html">
+<meta property="og:site_name" content="朱广龙的个人博客">
+<meta property="og:description" content="js 模块化进阶对编译原理不熟悉的建议可以将探秘esmoudle放在熟悉编译相关知识以后再来看探秘esmoudle js 模块发展历程浏览器加载script在浏览器发展早期通过srcpit标签进行加载外部嵌入的script以及html页面内部书写js 123456&lt;!-- 页面内嵌的脚本 --&gt;&lt;script type&#x3D;&quot;application&#x2F;javascript&amp;q">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-03-01T12:39:00.000Z">
+<meta property="article:modified_time" content="2024-10-10T04:33:50.134Z">
+<meta property="article:author" content="朱广龙">
+<meta property="article:tag" content="前端模块化">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2022/03/01/%E6%A8%A1%E5%9D%97%E5%8C%96%E8%BF%9B%E9%98%B6/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>模块化进阶 | 朱广龙的个人博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">朱广龙的个人博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/03/01/%E6%A8%A1%E5%9D%97%E5%8C%96%E8%BF%9B%E9%98%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="朱广龙">
+      <meta itemprop="description" content="定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="朱广龙的个人博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          模块化进阶
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2022-03-01 20:39:00" itemprop="dateCreated datePublished" datetime="2022-03-01T20:39:00+08:00">2022-03-01</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2024-10-10 12:33:50" itemprop="dateModified" datetime="2024-10-10T12:33:50+08:00">2024-10-10</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="js-模块化进阶"><a href="#js-模块化进阶" class="headerlink" title="js 模块化进阶"></a>js 模块化进阶</h1><p>对编译原理不熟悉的建议可以将探秘esmoudle放在熟悉编译相关知识以后再来看探秘esmoudle</p>
+<h2 id="js-模块发展历程"><a href="#js-模块发展历程" class="headerlink" title="js 模块发展历程"></a>js 模块发展历程</h2><h3 id="浏览器加载script"><a href="#浏览器加载script" class="headerlink" title="浏览器加载script"></a>浏览器加载script</h3><p>在浏览器发展早期通过srcpit标签进行加载外部嵌入的script以及html页面内部书写js</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">&lt;!-- 页面内嵌的脚本 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">type</span>=<span class="string">&quot;application/javascript&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">&lt;!-- 外部脚本 --&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">type</span>=<span class="string">&quot;application/javascript&quot;</span> <span class="attr">src</span>=<span class="string">&quot;./zgl.js&quot;</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>  浏览器是同步加载 JavaScript 脚本,边下script脚本的内容边解析,即渲染引擎遇到标签就会停下来，等到执行完脚本，再继续向下渲染。如果是外部脚本，还必须加入脚本下载的时间</p>
+<p>  如果脚本体积很大，下载和执行的时间就会很长，如果script标签中存在比较耗时的任务，</p>
+<p>  因此造成浏览器堵塞，就会导致白屏时间变长甚至会页面崩溃，用户会感觉到浏览器“卡死”了</p>
+<p> 我们是否能够延迟script标签的解析时间或者等待html解析完毕以后再去解析script标签呢？答案是可以的.</p>
+<p>浏览器提供了script标签异步加载方案</p>
+<h3 id="async"><a href="#async" class="headerlink" title="async"></a>async</h3><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;./zgl.js&quot;</span> <span class="attr">async</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>上面代码中如果浏览器解析script标签的时候遇到了async,那么渲染引擎会忽略当前script标签的解析，但是并不会暂停对当前script脚本的下载，直到当前脚本下载完毕以后会停止对html的解析，然后去解析已经下载完毕的script标签的内容，等待script内容解析完再继续去解析html</p>
+<h3 id="defer"><a href="#defer" class="headerlink" title="defer"></a>defer</h3><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">script</span> <span class="attr">src</span>=<span class="string">&quot;./zgl.js&quot;</span> <span class="attr">defer</span>&gt;</span><span class="tag">&lt;/<span class="name">script</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>​      上面代码中如果浏览器解析script的时候遇到了defer，那么渲染引擎会忽略当前script标签的解析，但是并不会暂停对当前script脚本的下载，直到都没解析完毕以后，然后按照下载脚本书写的顺序去解析已经下载完毕的脚本</p>
+<h3 id="动态加载script脚本信息"><a href="#动态加载script脚本信息" class="headerlink" title="动态加载script脚本信息"></a>动态加载script脚本信息</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">const script = document.createElement(&#x27;script&#x27;);</span><br><span class="line"></span><br><span class="line">window.onload = function () &#123;</span><br><span class="line">  script.src = &#x27;./zgl/js&#x27;;</span><br><span class="line">  document.body.appendChild(script)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上面代码中等待浏览器解析html完成以后，然后再去执行脚本的下载以及解析</p>
+<h3 id="IIFE"><a href="#IIFE" class="headerlink" title="IIFE"></a>IIFE</h3><p>由于script脚本在加载过程中可能会存在多个不一样的脚本中命名会发生覆盖的问题,就会产生命名冲突，我们是否有一种方式能够解决当前模块只能访问当前模块的变量，不能让其他模块中变量进行对当前模块的变量进行覆盖呢?答案是有的，我们可以利用js执行上下所产生的闭包来解决模块命名问题</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> moduleA = (<span class="keyword">function</span>(<span class="params"></span>)&#123;</span><br><span class="line">  <span class="keyword">return</span> &#123;</span><br><span class="line">    <span class="attr">name</span>: <span class="string">&#x27;zgl&#x27;</span>，</span><br><span class="line">    <span class="attr">age</span>: <span class="number">26</span>，</span><br><span class="line">    <span class="title function_">getName</span>(<span class="params"></span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">name</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;)();</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> moduleB = (<span class="keyword">function</span>(<span class="params"></span>)&#123;</span><br><span class="line">  <span class="keyword">return</span> &#123;</span><br><span class="line">    <span class="attr">name</span>: <span class="string">&#x27;zgl&#x27;</span>，</span><br><span class="line">    <span class="attr">age</span>: <span class="number">26</span>，</span><br><span class="line">    <span class="title function_">getName</span>(<span class="params"></span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">name</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;)();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 由于js闭包的关系，模块只能访问模块内部的变量</span></span><br></pre></td></tr></table></figure>
+
+<p>上面代码利用js的执行上下文规则有效的解决变量覆盖以及变量冲突带来的一些问题</p>
+<h2 id="探秘现代模块化"><a href="#探秘现代模块化" class="headerlink" title="探秘现代模块化"></a>探秘现代模块化</h2><p>模块进行加载的方案主要科研归为编译时加载和运行时加载，</p>
+<p>大部分语言都选择了运行加载接下来我们分析一下为什么选择会编译时</p>
+<h5 id="编译时加载的优点"><a href="#编译时加载的优点" class="headerlink" title="编译时加载的优点"></a>编译时加载的优点</h5><ul>
+<li>编译时加载能够提早发现一些错误，而不用等到运行时，比如引用的时候能够及时发现当前引用的路径是否正确以及引用的名称是否正确等。</li>
+<li>编译时能够删除某些没有使用的模块，比如某些模块引用了但是实际并没有使用到当前模块可以进行删除。</li>
+<li>编译时能够对引用的模块进行优化, 比如A模块中暴露了a,b2个变量，而实际引用的时候，其实只引用了a变量，那么b变量相关的代码可以被优化掉</li>
+<li>编译时能够提前给模块分配内存，而不用等到运行时分配内存，内存分配不够的问题也能在编译中提前解决</li>
+<li>能够提前发现模块之间的依赖关系以及是否存在循环问题</li>
+</ul>
+<h5 id="运行时加载的优点"><a href="#运行时加载的优点" class="headerlink" title="运行时加载的优点"></a>运行时加载的优点</h5><ul>
+<li>能够在任何地方(比如函数中)进行模块的引用，使用方式比较灵活没有任何约束</li>
+</ul>
+<h2 id="探秘commonjs"><a href="#探秘commonjs" class="headerlink" title="探秘commonjs"></a>探秘commonjs</h2><p>伴随着nodejs的兴起，模块化越来越成为一个亟待解决的问题，到底应该怎么去解决呢?	</p>
+<p>接下来我们一起去探索一下commonjs是怎么实现的以及为什么这么去实现</p>
+<ul>
+<li>难点—:  加载方式是同步的还是异步的？</li>
+<li>难点二:  加载时机是运行时还是编译时(ps: 不懂的可以去问度娘)</li>
+<li>难点三:  如何解决模块与模块之间的循环问题</li>
+<li>难点四: 如何定义模块的暴露方式以及引用方式</li>
+</ul>
+<p>由于nodejs主要是<code>I/O密集型</code>的，也就是说主要是用来读取文件，操作文件等，并不涉及到页面的渲染，以及服务器提供的资源相较于浏览器是比较充分的，因此为了降低实现难度选择了<code>同步的加载方式</code></p>
+<h5 id="加载时机是由语法决定的"><a href="#加载时机是由语法决定的" class="headerlink" title="加载时机是由语法决定的"></a>加载时机是由语法决定的</h5><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 第一种语法</span></span><br><span class="line"><span class="keyword">const</span> fs = <span class="built_in">require</span>(<span class="string">&#x27;fs&#x27;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> fileContent = fs.<span class="title function_">readFileSync</span>(<span class="string">&#x27;./a.js&#x27;</span>, &#123; <span class="attr">encoding</span>: <span class="string">&#x27;utf-8&#x27;</span>&#125;);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 第二种语法</span></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">readFile</span>(<span class="params">filePath</span>) &#123;</span><br><span class="line">  cons fs = <span class="built_in">require</span>(<span class="string">&#x27;fs&#x27;</span>);</span><br><span class="line">  <span class="keyword">const</span> fileContent = fs.<span class="title function_">readFileSync</span>(<span class="string">&#x27;./a.js&#x27;</span>, &#123; <span class="attr">encoding</span>: <span class="string">&#x27;utf-8&#x27;</span> &#125;);</span><br><span class="line">  <span class="keyword">return</span> fileContent;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h5 id="node模块的加载时机"><a href="#node模块的加载时机" class="headerlink" title="node模块的加载时机"></a>node模块的加载时机</h5><p>上述罗列了编译进行加载的优点，那么nodejs为什么放弃编译时而选择运行时呢？</p>
+<p>nodejs需要提供像第二段代码这样的使用方式，是编译时做不到的。编译时并不能提前去加载某个函数中引用了某个模块,因此只能选择运行时</p>
+<h5 id="模块与模块的循环引用问题"><a href="#模块与模块的循环引用问题" class="headerlink" title="模块与模块的循环引用问题"></a>模块与模块的循环引用问题</h5><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// a.js</span></span><br><span class="line"> <span class="keyword">const</span> b = <span class="built_in">require</span>(<span class="string">&quot;./b.js&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// b.js</span></span><br><span class="line"><span class="keyword">const</span> a = <span class="built_in">require</span>(<span class="string">&#x27;./a.js&#x27;</span>);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>循环加载:  2个模块或者多个模块之间存在强耦合关系，相互之间引用，可能会导致递归加载依赖，使程序崩溃</p>
+<p>循环引用带来的危害是比较大的，那么我们如何去避免加载循环引用呢</p>
+<p>我们先来看一段代码</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//创建一个存在循环引用的对象</span></span><br><span class="line"><span class="keyword">const</span> moduleA = &#123;</span><br><span class="line">  <span class="attr">b</span>: <span class="string">&#x27;zgl&#x27;</span></span><br><span class="line">&#125;;</span><br><span class="line">moduleA.<span class="property">b</span> = moduleA;</span><br><span class="line"></span><br><span class="line"><span class="title class_">JSON</span>.<span class="title function_">stringify</span>(moduleA) <span class="comment">// TypeError: Converting circular structure to JSON</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 那么我们应该如何去解决在json序列化过程中产生的循环引用问题呢</span></span><br><span class="line"><span class="comment">// 其实我们只要去比对当前对象是否已经被遍历过，如果当前对象被遍历过，我们就应该停止对当前的对象</span></span><br><span class="line"><span class="comment">// 可以使用一个数组去缓存已经被遍历的引用数据类型，下一次遍历的时候先判断缓存中是否存在，如果存在说明已经被遍历过，停止对引用数据类型的遍历</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>上述代码注释向我们阐述了如何解决在json序列化的过程中存在循环引用问题，那么我们能否借鉴到模块循环引用的问题上呢</p>
+<p>当然是可以的</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 缓存模块</span></span><br><span class="line"><span class="keyword">const</span> modules = [ ];</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">require</span>(<span class="params"><span class="variable language_">module</span></span>) &#123;</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">const</span> index = modules.<span class="title function_">indexOf</span>(<span class="variable language_">module</span>);</span><br><span class="line">  <span class="keyword">if</span> (index &lt; <span class="number">0</span>) &#123;</span><br><span class="line">    modules.<span class="title function_">push</span>(<span class="variable language_">module</span>);</span><br><span class="line">  &#125;;</span><br><span class="line">  <span class="keyword">return</span> modules[index];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>&#x2F;&#x2F; 我们来分析一下上面的这段代码存在什么问题呢</p>
+<p>第一个问题: 判断当前模块是否在缓存中的时间复杂度为n</p>
+<p>第二个问题: 无法判断当前模块是否加载阶段还是其他阶段</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> modules = &#123;</span><br><span class="line"></span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">require</span>(<span class="params"><span class="variable language_">module</span></span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> &#123; id &#125; = <span class="variable language_">module</span>;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 增加loaded属性用于判断模块是否被加载过</span></span><br><span class="line">  <span class="keyword">if</span> (!<span class="variable language_">module</span>.<span class="property">loaded</span>) &#123;</span><br><span class="line">    <span class="variable language_">module</span>.<span class="property">loaded</span> = <span class="literal">true</span>;</span><br><span class="line">    modules[id] = <span class="variable language_">module</span>;</span><br><span class="line">  &#125;;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 降低当前模块在缓存中查找的时间复杂度，从O(n)降低为O(1);</span></span><br><span class="line">  <span class="keyword">if</span> (id <span class="keyword">in</span> <span class="variable language_">module</span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> modules[id]</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> <span class="variable language_">module</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>为了解决第二个问题我们引入了一个变量用来判断当前模块是否被加载过以及改变使用对象进行缓存降低查找的复杂度</p>
+<p>我们从上面这段代码能够分析出来模块对象必须拥有一个属性用来表示是否被加载过以及模块的唯一的标识</p>
+<figure class="highlight typescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 模块对象</span></span><br><span class="line"><span class="keyword">interface</span> <span class="title class_">Module</span>  &#123;</span><br><span class="line">  <span class="attr">loaded</span>: <span class="built_in">boolean</span>;</span><br><span class="line">  <span class="attr">id</span>: <span class="built_in">string</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过上述手段我们已经成功的解决了模块循环的问题，简单的概括为如果当前模块第一次加载那么就会被缓存，下次读取的时候就会从缓存中进行读取，而不会第二次继续加载当前模块</p>
+<h5 id="如何暴露模块和引用模块"><a href="#如何暴露模块和引用模块" class="headerlink" title="如何暴露模块和引用模块"></a>如何暴露模块和引用模块</h5><p>其实这也是一个最好解决的问题，就是通过定制一套规范,比如nodejs定义了通过module.export进行暴露，以及require进行引用</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// a.js</span></span><br><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = &#123;</span><br><span class="line">  <span class="attr">name</span>: <span class="string">&#x27;zgl&#x27;</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> name = <span class="built_in">require</span>(<span class="string">&#x27;./a.js&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>但是这种书写格式太死板了并不符合node能够灵活书写的方式，因此又想出了一个巧妙的方法</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">exports</span>.<span class="property">name</span> = <span class="string">&#x27;zgl&#x27;</span>;</span><br><span class="line"><span class="keyword">const</span> name = <span class="built_in">require</span>(<span class="string">&#x27;./a.js&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<p>上述存在一个问题，由于一开始就定义了require引用的数据是来自module.exports，那么这样是不是违背了初衷,如果exports和module.exports存在不同数据，那么引用的是谁的数据的呢,得想办法解决</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable language_">module</span>.<span class="property">exports</span> = <span class="built_in">exports</span></span><br></pre></td></tr></table></figure>
+
+<p>通过简单的复制就解决了这个问题</p>
+<p>那么我们现在还剩一个require没有进行实现了, 接下来需要去实现require, require的逻辑其实很简单</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">function</span> <span class="title function_">require</span>(<span class="params"><span class="variable language_">module</span>, <span class="built_in">exports</span></span>) &#123;&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>我们目前已经实现了模块的导入以及模块导出的逻辑</p>
+<p>还有一个很关键的问题如何解决模块与模块之间的隔离问题，答案其实也很简单就是使用一个函数</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(<span class="keyword">function</span> (<span class="params"><span class="variable language_">module</span>,<span class="built_in">exports</span>, <span class="built_in">require</span></span>))(<span class="variable language_">module</span>,<span class="built_in">exports</span>, <span class="built_in">require</span>)；</span><br></pre></td></tr></table></figure>
+
+<h5 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h5><p>至此我们已经完全解析完了commonjs的具体实现，简单回顾一下: 首先确定加载时机和如何暴露模块以及如何引用模块，模块之间的数据隔离</p>
+<h2 id="探秘esmodule"><a href="#探秘esmodule" class="headerlink" title="探秘esmodule"></a>探秘esmodule</h2><p>我们来思考一个问题，我们能不能直接在浏览器中使用commomjs呢</p>
+<p>答案是否定的，理由如下</p>
+<ul>
+<li>js脚本会阻塞浏览器渲染进程解析html</li>
+<li>浏览器提供给js使用的资源比较少</li>
+<li>js文件不能过大</li>
+<li>报错信息需要在编译时确定</li>
+</ul>
+<p>我们发现commojs如果需要在浏览器中使用，必须解决的问题</p>
+<ul>
+<li>模块需要支持异步加载</li>
+<li>需要充分利用模块中导出的数据</li>
+<li>模块相关的报错信息不能出现在运行时</li>
+</ul>
+<p>我们反过来去思考如果需要对commonjs进行改造的成本是比较大的,但是我们发现要解决的问题如果将编译时机进行提前到编译时是不是也就解决了这些问题，因此决定浏览器的模块加载方式决定采用编译时</p>
+<h3 id="如何将代码进行编译"><a href="#如何将代码进行编译" class="headerlink" title="如何将代码进行编译"></a>如何将代码进行编译</h3><p>我们可以采用业界比较通用的手段将可执行代码进行编译成抽象语法树</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> &#123; parse &#125; <span class="keyword">from</span> <span class="string">&#x27;@babel/parser&#x27;</span>;</span><br><span class="line"><span class="keyword">const</span> hasParsers = <span class="title function_">parse</span>(str, &#123;<span class="attr">sourceType</span>: <span class="string">&#x27;module&#x27;</span>&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>我们上面借助于babel提供的插件进行将可执行代码转为了抽象语法树</p>
+<h3 id="模块的加载时机是什么时候"><a href="#模块的加载时机是什么时候" class="headerlink" title="模块的加载时机是什么时候"></a>模块的加载时机是什么时候</h3><p>如果我们从一开始通过深度优先遍历的时候就将模块进行缓存其实是不合理的一件事，缓存是需要一定的内存消耗的，但是浏览器提供我们的内存开销非常有限，也就是我们只能选择运行时才去解析模块的内容</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span>  traverse <span class="keyword">from</span> <span class="string">&#x27;@babel/traverse&#x27;</span>;</span><br><span class="line"><span class="keyword">import</span> getPeopleName <span class="keyword">from</span> <span class="string">&#x27;./a.js&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> t = traverse.<span class="property">default</span>;</span><br><span class="line"></span><br><span class="line"><span class="title function_">t</span>(hasParsers, &#123;</span><br><span class="line">  <span class="title function_">enter</span>(<span class="params">path</span>) &#123;</span><br><span class="line">    <span class="keyword">if</span> (path.<span class="title function_">isFunctionDeclaration</span>(getPeopleName)) &#123;</span><br><span class="line">      <span class="variable language_">console</span>.<span class="title function_">log</span>(path.<span class="property">node</span>, <span class="string">&#x27;222222&#x27;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>​	我们上面借助于babel实现了需要时才去解析对应的模块</p>
+<h3 id="模块与模块的循环问题"><a href="#模块与模块的循环问题" class="headerlink" title="模块与模块的循环问题"></a>模块与模块的循环问题</h3><p>其实由于时运行是才去解析的模块其实产生模块循环的概率其实是微乎其微的，可解决或者不解决，现代模块化规范中是没有进行解决的</p>
+<h3 id="如何暴露模块和引用模块-1"><a href="#如何暴露模块和引用模块-1" class="headerlink" title="如何暴露模块和引用模块"></a>如何暴露模块和引用模块</h3><p>参考现有比较成熟的java语言的模块化导入关键词,采用import进行模块化的引用</p>
+<p>参考node的模块化导出模式采用 export default 和export进行模块的导出</p>
+<h3 id="总结-1"><a href="#总结-1" class="headerlink" title="总结"></a>总结</h3><p>esmodule主要采用在代码编译阶段时初始化每个模块之间的依赖关系，在代码执行时再进行依赖的寻找</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E5%89%8D%E7%AB%AF%E6%A8%A1%E5%9D%97%E5%8C%96/" rel="tag"># 前端模块化</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/01/24/%E6%B7%B1%E5%85%A5%E7%90%86%E8%A7%A3flex%E5%B8%83%E5%B1%80/" rel="prev" title="深入理解flex布局">
+      <i class="fa fa-chevron-left"></i> 深入理解flex布局
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/03/01/%E5%9F%BA%E6%9C%AC%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/" rel="next" title="基本数据类型">
+      基本数据类型 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#js-%E6%A8%A1%E5%9D%97%E5%8C%96%E8%BF%9B%E9%98%B6"><span class="nav-number">1.</span> <span class="nav-text">js 模块化进阶</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#js-%E6%A8%A1%E5%9D%97%E5%8F%91%E5%B1%95%E5%8E%86%E7%A8%8B"><span class="nav-number">1.1.</span> <span class="nav-text">js 模块发展历程</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8F%E8%A7%88%E5%99%A8%E5%8A%A0%E8%BD%BDscript"><span class="nav-number">1.1.1.</span> <span class="nav-text">浏览器加载script</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#async"><span class="nav-number">1.1.2.</span> <span class="nav-text">async</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#defer"><span class="nav-number">1.1.3.</span> <span class="nav-text">defer</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8A%A8%E6%80%81%E5%8A%A0%E8%BD%BDscript%E8%84%9A%E6%9C%AC%E4%BF%A1%E6%81%AF"><span class="nav-number">1.1.4.</span> <span class="nav-text">动态加载script脚本信息</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IIFE"><span class="nav-number">1.1.5.</span> <span class="nav-text">IIFE</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A2%E7%A7%98%E7%8E%B0%E4%BB%A3%E6%A8%A1%E5%9D%97%E5%8C%96"><span class="nav-number">1.2.</span> <span class="nav-text">探秘现代模块化</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%BC%96%E8%AF%91%E6%97%B6%E5%8A%A0%E8%BD%BD%E7%9A%84%E4%BC%98%E7%82%B9"><span class="nav-number">1.2.0.0.1.</span> <span class="nav-text">编译时加载的优点</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E8%BF%90%E8%A1%8C%E6%97%B6%E5%8A%A0%E8%BD%BD%E7%9A%84%E4%BC%98%E7%82%B9"><span class="nav-number">1.2.0.0.2.</span> <span class="nav-text">运行时加载的优点</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A2%E7%A7%98commonjs"><span class="nav-number">1.3.</span> <span class="nav-text">探秘commonjs</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD%E6%97%B6%E6%9C%BA%E6%98%AF%E7%94%B1%E8%AF%AD%E6%B3%95%E5%86%B3%E5%AE%9A%E7%9A%84"><span class="nav-number">1.3.0.0.1.</span> <span class="nav-text">加载时机是由语法决定的</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#node%E6%A8%A1%E5%9D%97%E7%9A%84%E5%8A%A0%E8%BD%BD%E6%97%B6%E6%9C%BA"><span class="nav-number">1.3.0.0.2.</span> <span class="nav-text">node模块的加载时机</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E4%B8%8E%E6%A8%A1%E5%9D%97%E7%9A%84%E5%BE%AA%E7%8E%AF%E5%BC%95%E7%94%A8%E9%97%AE%E9%A2%98"><span class="nav-number">1.3.0.0.3.</span> <span class="nav-text">模块与模块的循环引用问题</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E6%9A%B4%E9%9C%B2%E6%A8%A1%E5%9D%97%E5%92%8C%E5%BC%95%E7%94%A8%E6%A8%A1%E5%9D%97"><span class="nav-number">1.3.0.0.4.</span> <span class="nav-text">如何暴露模块和引用模块</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.3.0.0.5.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A2%E7%A7%98esmodule"><span class="nav-number">1.4.</span> <span class="nav-text">探秘esmodule</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%B0%86%E4%BB%A3%E7%A0%81%E8%BF%9B%E8%A1%8C%E7%BC%96%E8%AF%91"><span class="nav-number">1.4.1.</span> <span class="nav-text">如何将代码进行编译</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E7%9A%84%E5%8A%A0%E8%BD%BD%E6%97%B6%E6%9C%BA%E6%98%AF%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99"><span class="nav-number">1.4.2.</span> <span class="nav-text">模块的加载时机是什么时候</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E5%9D%97%E4%B8%8E%E6%A8%A1%E5%9D%97%E7%9A%84%E5%BE%AA%E7%8E%AF%E9%97%AE%E9%A2%98"><span class="nav-number">1.4.3.</span> <span class="nav-text">模块与模块的循环问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E6%9A%B4%E9%9C%B2%E6%A8%A1%E5%9D%97%E5%92%8C%E5%BC%95%E7%94%A8%E6%A8%A1%E5%9D%97-1"><span class="nav-number">1.4.4.</span> <span class="nav-text">如何暴露模块和引用模块</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%BB%E7%BB%93-1"><span class="nav-number">1.4.5.</span> <span class="nav-text">总结</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">朱广龙</p>
+  <div class="site-description" itemprop="description">定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">朱广龙</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

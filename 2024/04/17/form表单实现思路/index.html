@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="前言在中后台这个领域，form是一个离不开老生常谈的话题，有很多优秀的form解决方案， 比如react-form-hook，formik，formaily等，在使用这些比较成熟的解决方案的时候有想过怎么实现的呢， 我们今天一起来揭开这层神秘的面纱, 一起探讨一下实现一个form的思路以及核心编码在开始今天的话题之前，需要了解 react 的一个比较新的api（useSyncExternalSto">
+<meta property="og:type" content="article">
+<meta property="og:title" content="表单实现思路">
+<meta property="og:url" content="http://example.com/2024/04/17/form%E8%A1%A8%E5%8D%95%E5%AE%9E%E7%8E%B0%E6%80%9D%E8%B7%AF/index.html">
+<meta property="og:site_name" content="朱广龙的个人博客">
+<meta property="og:description" content="前言在中后台这个领域，form是一个离不开老生常谈的话题，有很多优秀的form解决方案， 比如react-form-hook，formik，formaily等，在使用这些比较成熟的解决方案的时候有想过怎么实现的呢， 我们今天一起来揭开这层神秘的面纱, 一起探讨一下实现一个form的思路以及核心编码在开始今天的话题之前，需要了解 react 的一个比较新的api（useSyncExternalSto">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/18b1132a17954856aa6889bb9a014475~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1656&h=1110&s=225828&e=png&b=17141d">
+<meta property="og:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/ad3ab50144c642b78955f9732e30c5ec~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1610&h=1086&s=89960&e=png&b=17141d">
+<meta property="article:published_time" content="2024-04-17T12:39:00.000Z">
+<meta property="article:modified_time" content="2024-10-10T05:25:39.794Z">
+<meta property="article:author" content="朱广龙">
+<meta property="article:tag" content="低代码">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/18b1132a17954856aa6889bb9a014475~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1656&h=1110&s=225828&e=png&b=17141d">
+
+<link rel="canonical" href="http://example.com/2024/04/17/form%E8%A1%A8%E5%8D%95%E5%AE%9E%E7%8E%B0%E6%80%9D%E8%B7%AF/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>表单实现思路 | 朱广龙的个人博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">朱广龙的个人博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/04/17/form%E8%A1%A8%E5%8D%95%E5%AE%9E%E7%8E%B0%E6%80%9D%E8%B7%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="朱广龙">
+      <meta itemprop="description" content="定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="朱广龙的个人博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          表单实现思路
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2024-04-17 20:39:00" itemprop="dateCreated datePublished" datetime="2024-04-17T20:39:00+08:00">2024-04-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2024-10-10 13:25:39" itemprop="dateModified" datetime="2024-10-10T13:25:39+08:00">2024-10-10</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在中后台这个领域，form是一个离不开老生常谈的话题，有很多优秀的form解决方案， 比如react-form-hook，formik，formaily等，在使用这些比较成熟的解决方案的时候有想过怎么实现的呢， 我们今天一起来揭开这层神秘的面纱, 一起探讨一下实现一个form的思路以及核心编码在开始今天的话题之前，需要了解 react 的一个比较新的api（useSyncExternalStore），我会根据设计方案的制定以及实现思路来带着大家进行对编码的实现</p>
+<h2 id="设计方案"><a href="#设计方案" class="headerlink" title="设计方案"></a>设计方案</h2><h3 id="设计理念"><a href="#设计理念" class="headerlink" title="设计理念"></a>设计理念</h3><ol>
+<li><strong>状态管理</strong>: <code>FormStore</code> 主要负责管理表单的状态，包括表单的值、初始值、错误信息、校验器和事件监听器。通过集中管理这些状态，可以简化表单逻辑并提高代码可维护性。</li>
+<li><strong>响应式更新</strong>: 当表单值发生变化时，<code>FormStore</code> 会通知所有注册的监听器。这种设计允许视图组件能够自动更新，从而实现响应式 UI。</li>
+<li><strong>表单校验</strong>: <code>FormStore</code> 提供了校验机制，确保表单提交时的有效性。通过注册校验器，可以对表单的不同字段进行单独的校验。</li>
+<li><strong>解耦逻辑</strong>: <code>FormStore</code> 将表单的状态管理与 UI 逻辑解耦，使得表单逻辑更加模块化和可测试。</li>
+</ol>
+<h3 id="要解决的问题"><a href="#要解决的问题" class="headerlink" title="要解决的问题"></a>要解决的问题</h3><ol>
+<li><strong>状态同步</strong>: 确保表单的值与初始值之间的同步，支持表单的重置操作。</li>
+<li><strong>值更新</strong>: 提供方法更新表单字段的值，并确保这些变化能够被及时监听和响应。</li>
+<li><strong>错误处理</strong>: 在表单校验失败时，能够准确地记录并处理错误信息。</li>
+<li><strong>提交逻辑</strong>: 管理表单的提交行为，确保在提交之前进行必要的校验，并根据结果触发相应的回调函数。</li>
+</ol>
+<p>在编程语言中，单一职则应该是耳目共熟了吧，在这一思想的指导下我们来写一下我们的form表单的整体设计思路(UML图，流程图)</p>
+<h3 id="UML图"><a href="#UML图" class="headerlink" title="UML图"></a>UML图</h3><ul>
+<li>form组件：负责表单的提交以及表单组件的赋值</li>
+<li>form-item组件：负责控制常见的表单组件，负责收集校验规则</li>
+<li>表单组件需要提供onchange和value事件</li>
+<li>采用面向对象来管理相关的事件</li>
+</ul>
+<p>根据以上思路整体的设计思路如下</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/18b1132a17954856aa6889bb9a014475~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1656&h=1110&s=225828&e=png&b=17141d"></p>
+<h3 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h3><ul>
+<li>formItem组件触发onchange通知form组件收集校验规则</li>
+<li>form组件setValue&#x2F;setVlaues通知form-item去set表单组件</li>
+<li>Input组件发生改变触发onchane并通知form组件进行set</li>
+</ul>
+<p>流程图大致如下</p>
+<p><img src="https://p3-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/ad3ab50144c642b78955f9732e30c5ec~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1610&h=1086&s=89960&e=png&b=17141d"></p>
+<h2 id="编码实现"><a href="#编码实现" class="headerlink" title="编码实现"></a>编码实现</h2><h3 id="Form组件实现思路"><a href="#Form组件实现思路" class="headerlink" title="Form组件实现思路"></a>Form组件实现思路</h3><ul>
+<li>form 组件主要承担了表单的最后提交</li>
+<li>form组件负责管理Formstore类， formStore承担了所有的业务逻辑</li>
+<li>form组件提供了上下文供form-item组件使用</li>
+<li>form继承了原生form元素的能力</li>
+</ul>
+<p>根据以上form承担的责任以及结合设计思路因此我们的FormConext大致实现思路如下</p>
+<h4 id="FormContext"><a href="#FormContext" class="headerlink" title="FormContext"></a>FormContext</h4><figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">interface</span> <span class="title class_">FormContext</span> &#123;</span><br><span class="line">  values?: <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="built_in">unknown</span>&gt;; <span class="comment">// 用于存储表单数据</span></span><br><span class="line">  onValuesChange?: <span class="function">(<span class="params"><span class="attr">key</span>: <span class="built_in">string</span>, <span class="attr">value</span>: <span class="built_in">unknown</span></span>) =&gt;</span> <span class="built_in">void</span>; <span class="comment">// 用于监听表单数据变化</span></span><br><span class="line">  registerValidator?: <span class="function">(<span class="params"><span class="attr">key</span>: <span class="built_in">string</span>, <span class="attr">validator</span>: () =&gt; <span class="built_in">void</span></span>) =&gt;</span> <span class="built_in">void</span> <span class="comment">// 注册校验规则</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">// 表单context</span></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">const</span> <span class="title class_">FormProvider</span> = createContext&lt;<span class="title class_">FormContext</span>&gt;(&#123;&#125;);</span><br></pre></td></tr></table></figure>
+
+<h4 id="FormStore"><a href="#FormStore" class="headerlink" title="FormStore"></a>FormStore</h4><p>实现了FormConetx以后我们来看一下我来设计一下我的FormStore类</p>
+<figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">interface</span> <span class="title class_">Errors</span> &#123;</span><br><span class="line">  [<span class="attr">key</span>: <span class="built_in">string</span>]: <span class="title class_">Error</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">interface</span> <span class="title class_">Validators</span> &#123;</span><br><span class="line">  [<span class="attr">key</span>: <span class="built_in">string</span>]: <span class="function">() =&gt;</span> <span class="built_in">void</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">interface</span> <span class="title class_">Listeners</span> &#123;</span><br><span class="line">  (): <span class="built_in">void</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">interface</span> <span class="title class_">HandleSubmit</span> &#123;</span><br><span class="line">  onFinish?: <span class="function">(<span class="params"><span class="attr">values</span>: <span class="title class_">FormValues</span></span>) =&gt;</span> <span class="built_in">void</span>;</span><br><span class="line">  onFinishFailed?: <span class="function">(<span class="params"><span class="attr">errors</span>: <span class="title class_">FormErrors</span></span>) =&gt;</span> <span class="built_in">void</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">interface</span> <span class="title class_">IFormStore</span> &#123;</span><br><span class="line">   <span class="title function_">setValues</span>(<span class="attr">values</span>: <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="built_in">unknown</span>&gt;): <span class="built_in">void</span>;</span><br><span class="line">   <span class="title function_">setValue</span>(<span class="attr">key</span>: <span class="built_in">string</span>, <span class="attr">value</span>: <span class="built_in">unknown</span>): <span class="built_in">void</span>;</span><br><span class="line">   <span class="title function_">setInitialValues</span> (<span class="attr">values</span>: <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="built_in">unknown</span>&gt;): <span class="built_in">void</span>;</span><br><span class="line">   <span class="title function_">resetFields</span> (): <span class="built_in">void</span>;</span><br><span class="line">   <span class="title function_">onValuesChange</span> (<span class="attr">key</span>: <span class="built_in">string</span>, <span class="attr">value</span>: <span class="built_in">unknown</span>): <span class="built_in">void</span>;</span><br><span class="line">   <span class="title function_">emitChange</span>(): <span class="built_in">void</span>;</span><br><span class="line">   <span class="title function_">getFieldValue</span> (<span class="attr">key</span>: <span class="built_in">string</span>): <span class="built_in">unknown</span>;</span><br><span class="line">   <span class="title function_">getFieldsValue</span> (): <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="built_in">unknown</span>&gt;;</span><br><span class="line">  <span class="title function_">subscribe</span> (<span class="attr">callback</span>: <span class="function">() =&gt;</span> <span class="built_in">void</span>): <span class="built_in">void</span>;</span><br><span class="line">   <span class="title function_">handleSubmit</span> (<span class="attr">e</span>: <span class="title class_">React</span>.<span class="property">FormEvent</span>&lt;<span class="title class_">HTMLFormElement</span>&gt;, </span><br><span class="line">   <span class="attr">options</span>: <span class="title class_">HandleSubmit</span>): <span class="title class_">Promise</span>&lt;<span class="built_in">void</span>&gt;;</span><br><span class="line">   <span class="title function_">registerValidator</span> (<span class="attr">key</span>: <span class="built_in">string</span>, <span class="attr">validator</span>: <span class="function">() =&gt;</span> <span class="built_in">void</span>);</span><br><span class="line">  </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">interface</span> <span class="title class_">HandleSubmitParams</span>  implements <span class="title class_">IFormStore</span> &#123;</span><br><span class="line">  onFinish?: <span class="function">(<span class="params"><span class="attr">values</span>: <span class="title class_">FormValues</span></span>) =&gt;</span> <span class="built_in">void</span>;</span><br><span class="line">  onFinishFailed?: <span class="function">(<span class="params"><span class="attr">errors</span>: <span class="title class_">FormErrors</span></span>) =&gt;</span> <span class="built_in">void</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">FormStore</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="attr">initialValues</span>: <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="built_in">unknown</span>&gt;;</span><br><span class="line">    <span class="keyword">private</span> values : <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="built_in">unknown</span>&gt;;</span><br><span class="line">    <span class="keyword">private</span> <span class="attr">errors</span>: <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="title class_">Error</span>&gt;;</span><br><span class="line">    <span class="keyword">private</span> <span class="attr">validators</span>: <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="function">() =&gt;</span> <span class="built_in">void</span>&gt;;</span><br><span class="line">    <span class="keyword">private</span> <span class="attr">listeners</span>: <span class="title class_">Array</span>&lt;<span class="function">() =&gt;</span> <span class="built_in">void</span>&gt;;</span><br><span class="line"></span><br><span class="line">    <span class="title function_">constructor</span>(<span class="params"><span class="attr">initialValues</span>: <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="built_in">unknown</span>&gt; </span>) &#123;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="property">initialValues</span> = initialValues;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="property">values</span> = &#123;&#125;;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="property">errors</span> = &#123;&#125;;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="property">validators</span> = &#123;&#125;;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="property">listeners</span> = [];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="title function_">setValues</span>(<span class="params"><span class="attr">values</span>: <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="built_in">unknown</span>&gt;</span>) &#123;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="property">values</span> = values;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="title function_">setValue</span>(<span class="params"><span class="attr">key</span>: <span class="built_in">string</span>, <span class="attr">value</span>: <span class="built_in">unknown</span></span>) &#123;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="property">values</span> = &#123;</span><br><span class="line">        ...<span class="variable language_">this</span>.<span class="property">values</span>,</span><br><span class="line">        [key]: value</span><br><span class="line">      &#125;;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="title function_">setInitialValues</span> (<span class="attr">values</span>: <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="built_in">unknown</span>&gt;) &#123;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="property">initialValues</span> = values;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="title function_">setValues</span>(values);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line"></span><br><span class="line">    <span class="title function_">resetFields</span> () &#123;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="title function_">setValues</span>(<span class="variable language_">this</span>.<span class="property">initialValues</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="title function_">onValuesChange</span> (<span class="attr">key</span>: <span class="built_in">string</span>, <span class="attr">value</span>: <span class="built_in">unknown</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (key) &#123;</span><br><span class="line">        <span class="variable language_">this</span>.<span class="title function_">setValues</span>(&#123;</span><br><span class="line">          ...<span class="variable language_">this</span>.<span class="property">values</span>,</span><br><span class="line">          [key]: value,</span><br><span class="line">        &#125;);</span><br><span class="line">        <span class="variable language_">this</span>.<span class="title function_">emitChange</span>()</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  <span class="title function_">emitChange</span>(<span class="params"></span>) &#123;</span><br><span class="line">      <span class="keyword">for</span> (<span class="keyword">const</span> listener <span class="keyword">of</span> <span class="variable language_">this</span>.<span class="property">listeners</span>) &#123;</span><br><span class="line">        <span class="title function_">listener</span>();</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  <span class="title function_">getFieldValue</span> (<span class="attr">key</span>: <span class="built_in">string</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">values</span>[key];</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="title function_">getFieldsValue</span> () &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="variable language_">this</span>.<span class="property">values</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="title function_">subscribe</span> (<span class="attr">callback</span>: <span class="function">() =&gt;</span> <span class="built_in">void</span>) &#123;</span><br><span class="line">      <span class="variable language_">this</span>.<span class="property">listeners</span> = [...<span class="variable language_">this</span>.<span class="property">listeners</span>, callback];</span><br><span class="line">      <span class="keyword">return</span> <span class="function">() =&gt;</span> &#123;</span><br><span class="line">        <span class="variable language_">this</span>.<span class="property">listeners</span> = <span class="variable language_">this</span>.<span class="property">listeners</span>.<span class="title function_">filter</span>(<span class="function">(<span class="params">listener</span>) =&gt;</span> listener !== callback);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 表单提交</span></span><br><span class="line">  <span class="keyword">async</span>  <span class="title function_">handleSubmit</span> (<span class="attr">e</span>: <span class="title class_">React</span>.<span class="property">FormEvent</span>&lt;<span class="title class_">HTMLFormElement</span>&gt;, </span><br><span class="line">    &#123; onFinish, onFinishFailed &#125;: <span class="title class_">HandleSubmit</span>) &#123;</span><br><span class="line">      e.<span class="title function_">preventDefault</span>();</span><br><span class="line"></span><br><span class="line">      <span class="keyword">for</span> (<span class="keyword">const</span> key <span class="keyword">of</span> <span class="title class_">Object</span>.<span class="title function_">keys</span>(<span class="variable language_">this</span>.<span class="property">validators</span>)) &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">          <span class="keyword">await</span> <span class="variable language_">this</span>.<span class="property">validators</span>[key]();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (e) &#123;</span><br><span class="line">          <span class="variable language_">this</span>.<span class="property">errors</span>[key] = e <span class="keyword">as</span> <span class="title class_">Error</span>;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">if</span> (<span class="title class_">Object</span>.<span class="title function_">keys</span>(<span class="variable language_">this</span>.<span class="property">errors</span>).<span class="property">length</span>) &#123;</span><br><span class="line">        onFinishFailed?.(<span class="variable language_">this</span>.<span class="property">errors</span>);</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        onFinish?.(<span class="variable language_">this</span>.<span class="property">values</span>);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">  <span class="title function_">registerValidator</span> (<span class="attr">key</span>: <span class="built_in">string</span>, <span class="attr">validator</span>: <span class="function">() =&gt;</span> <span class="built_in">void</span>)  &#123;</span><br><span class="line">    <span class="variable language_">this</span>.<span class="property">validators</span>[key] = validator;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="keyword">export</span> <span class="keyword">default</span> <span class="title class_">FormStore</span>;</span><br></pre></td></tr></table></figure>
+
+<h4 id="useForm"><a href="#useForm" class="headerlink" title="useForm"></a>useForm</h4><p>有了FormStore以后，我们根据Formstore来实现 useForm hook来管理</p>
+<figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> &#123; useRef &#125; <span class="keyword">from</span> <span class="string">&quot;react&quot;</span>;</span><br><span class="line"><span class="keyword">import</span> <span class="title class_">FormStore</span> <span class="keyword">from</span> <span class="string">&quot;./store&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">useForm</span>(<span class="params"><span class="attr">values</span>: <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="built_in">unknown</span>&gt; = &#123;&#125;</span>) &#123;</span><br><span class="line">  <span class="comment">// 表单数据</span></span><br><span class="line">  <span class="keyword">const</span> formStore = useRef&lt;<span class="title class_">FormStore</span>&gt;(<span class="keyword">new</span> <span class="title class_">FormStore</span>(values || &#123;&#125;));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> [formStore.<span class="property">current</span>];</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> useForm;</span><br></pre></td></tr></table></figure>
+
+<h4 id="Form-组件"><a href="#Form-组件" class="headerlink" title="Form 组件"></a>Form 组件</h4><p>最后一步结合FormContext，FormStore，useForm 封装出我们的Form组件</p>
+<figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">export</span> <span class="keyword">interface</span> <span class="title class_">FormProps</span> <span class="keyword">extends</span> <span class="title class_">HtmlHTMLAttributes</span>&lt;<span class="title class_">HTMLFormElement</span>&gt;, <span class="title class_">PropsWithChildren</span> &#123;</span><br><span class="line">  className?: <span class="built_in">string</span>; <span class="comment">// 表单类名</span></span><br><span class="line">  style?: <span class="title class_">CSSProperties</span>; <span class="comment">// 表单样式</span></span><br><span class="line">  onFinish?: <span class="function">(<span class="params"><span class="attr">values</span>: <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="built_in">unknown</span>&gt;</span>) =&gt;</span> <span class="built_in">void</span>; <span class="comment">// 表单提交回调</span></span><br><span class="line">  onFinishFailed?: <span class="function">(<span class="params"><span class="attr">values</span>: <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="built_in">unknown</span>&gt;</span>) =&gt;</span> <span class="built_in">void</span>; <span class="comment">// 表单提交失败回调</span></span><br><span class="line">  initialValues?: <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="built_in">unknown</span>&gt;; <span class="comment">// 表单初始值</span></span><br><span class="line">  form?: <span class="title class_">FormStore</span>;</span><br><span class="line">  watch?: <span class="title class_">Record</span>&lt;<span class="built_in">string</span>, <span class="title class_">Watch</span>&gt;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">interface</span> <span class="title class_">Watch</span> &#123;</span><br><span class="line">  immediate?: <span class="built_in">boolean</span>;</span><br><span class="line">  <span class="attr">handler</span>: <span class="function">(<span class="params"><span class="attr">value</span>: <span class="built_in">unknown</span></span>) =&gt;</span> <span class="built_in">void</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> <span class="title class_">Form</span>: <span class="variable constant_">FC</span>&lt;<span class="title class_">FormProps</span>&gt; = <span class="function">(<span class="params">&#123;</span></span></span><br><span class="line"><span class="params"><span class="function">  className,</span></span></span><br><span class="line"><span class="params"><span class="function">  style, children,</span></span></span><br><span class="line"><span class="params"><span class="function">  onFinish,</span></span></span><br><span class="line"><span class="params"><span class="function">  onFinishFailed,</span></span></span><br><span class="line"><span class="params"><span class="function">  initialValues,</span></span></span><br><span class="line"><span class="params"><span class="function">  form,</span></span></span><br><span class="line"><span class="params"><span class="function">  watch = &#123;&#125;,</span></span></span><br><span class="line"><span class="params"><span class="function">  ...resetProps</span></span></span><br><span class="line"><span class="params"><span class="function">&#125;</span></span></span><br><span class="line"><span class="params"><span class="function"></span>) =&gt;</span> &#123;</span><br><span class="line">  <span class="comment">// 表单数据</span></span><br><span class="line">  <span class="keyword">const</span> [innerFormStore] = <span class="title function_">useForm</span>(initialValues);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> formStore = form ?? innerFormStore;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="title function_">onValuesChange</span> = (<span class="params"><span class="attr">key</span>: <span class="built_in">string</span>, <span class="attr">value</span>: <span class="built_in">unknown</span></span>) =&gt; &#123;</span><br><span class="line">    watch?.[key]?.<span class="title function_">handler</span>(value);</span><br><span class="line">    formStore.<span class="title function_">onValuesChange</span>(key, value);</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 表单提交</span></span><br><span class="line">  <span class="keyword">const</span> <span class="title function_">handleSubmit</span> = (<span class="params"><span class="attr">e</span>: <span class="title class_">React</span>.<span class="title class_">FormEvent</span>&lt;<span class="title class_">HTMLFormElement</span>&gt;</span>) =&gt; &#123;</span><br><span class="line">    formStore.<span class="title function_">handleSubmit</span>(e, &#123; onFinish, onFinishFailed &#125;);</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="title function_">registerValidator</span> = (<span class="params"><span class="attr">key</span>: <span class="built_in">string</span>, <span class="attr">validator</span>: () =&gt; <span class="built_in">void</span></span>) =&gt; &#123;</span><br><span class="line">    formStore.<span class="title function_">registerValidator</span>(key, validator);</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="title function_">getFieldsValue</span> = (<span class="params"></span>) =&gt; &#123;</span><br><span class="line">    <span class="keyword">return</span> formStore.<span class="title function_">getFieldsValue</span>();</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="title function_">subscribe</span> = (<span class="params"><span class="attr">callback</span>: () =&gt; <span class="built_in">void</span></span>) =&gt; &#123;</span><br><span class="line">    <span class="keyword">return</span> formStore.<span class="title function_">subscribe</span>(callback);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> values = <span class="title function_">useSyncExternalStore</span>(subscribe, getFieldsValue);</span><br><span class="line"></span><br><span class="line">  <span class="title function_">useEffect</span>(<span class="function">() =&gt;</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">const</span> key <span class="keyword">of</span> <span class="title class_">Object</span>.<span class="title function_">keys</span>(watch)) &#123;</span><br><span class="line">      <span class="keyword">const</span> &#123; immediate, handler &#125; = watch[key];</span><br><span class="line">      <span class="keyword">if</span> (immediate) &#123;</span><br><span class="line">        <span class="title function_">handler</span>(formStore.<span class="title function_">getFieldValue</span>(key));</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;, [watch, formStore])</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> (</span><br><span class="line">    <span class="language-xml"><span class="tag">&lt;<span class="name">FormProvider.Provider</span> <span class="attr">value</span>=<span class="string">&#123;&#123;</span></span></span></span><br><span class="line"><span class="tag"><span class="language-xml">      <span class="attr">values</span>,</span></span></span><br><span class="line"><span class="tag"><span class="language-xml">      <span class="attr">onValuesChange</span>,</span></span></span><br><span class="line"><span class="tag"><span class="language-xml">      <span class="attr">registerValidator</span>,</span></span></span><br><span class="line"><span class="tag"><span class="language-xml"></span></span></span><br><span class="line"><span class="tag"><span class="language-xml">    &#125;&#125;&gt;</span></span></span><br><span class="line"><span class="language-xml">      <span class="tag">&lt;<span class="name">form</span> <span class="attr">className</span>=<span class="string">&#123;className&#125;</span> <span class="attr">style</span>=<span class="string">&#123;style&#125;</span> &#123;<span class="attr">...resetProps</span>&#125; <span class="attr">onSubmit</span>=<span class="string">&#123;handleSubmit&#125;</span>&gt;</span></span></span><br><span class="line"><span class="language-xml">        &#123;children&#125;</span></span><br><span class="line"><span class="language-xml">      <span class="tag">&lt;/<span class="name">form</span>&gt;</span></span></span><br><span class="line"><span class="language-xml">    <span class="tag">&lt;/<span class="name">FormProvider.Provider</span>&gt;</span></span></span><br><span class="line">  );</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> <span class="title class_">Form</span>;</span><br></pre></td></tr></table></figure>
+
+<h3 id="Form-item实现"><a href="#Form-item实现" class="headerlink" title="Form-item实现"></a>Form-item实现</h3><p>我们上面大致实现了Form组件的核心逻辑，接下来我们实现form-item组件，采用async-validator来进行数据校验</p>
+<ul>
+<li>form-item负责注入向其子组件value和onchange事件</li>
+<li>form-item负责收集校验规则</li>
+<li>form-item组件负责</li>
+</ul>
+<p>大致代码逻辑实现如下</p>
+<figure class="highlight ts"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> &#123; <span class="title class_">CSSProperties</span>, <span class="title class_">ChangeEvent</span>, <span class="title class_">Children</span>, <span class="title class_">ReactElement</span>, cloneElement, useContext, useState &#125; <span class="keyword">from</span> <span class="string">&quot;react&quot;</span>;</span><br><span class="line"><span class="keyword">import</span> &#123; <span class="title class_">FormProvider</span> &#125; <span class="keyword">from</span> <span class="string">&quot;.&quot;</span>;</span><br><span class="line"><span class="keyword">import</span> <span class="title class_">Schema</span>, &#123; <span class="title class_">Rule</span>, <span class="title class_">ValidateError</span> &#125; <span class="keyword">from</span> <span class="string">&#x27;async-validator&#x27;</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">interface</span> <span class="title class_">FormItmProps</span> &#123;</span><br><span class="line">  className?: <span class="built_in">string</span>; <span class="comment">// 表单项类名</span></span><br><span class="line">  style?: <span class="title class_">CSSProperties</span>; <span class="comment">// 表单项样式</span></span><br><span class="line">  <span class="attr">name</span>: <span class="built_in">string</span>; <span class="comment">// 表单项名称</span></span><br><span class="line">  label?: <span class="built_in">string</span>; <span class="comment">// 表单项标签</span></span><br><span class="line">  rules?: <span class="title class_">Rule</span>; <span class="comment">// 表单项校验规则</span></span><br><span class="line">  children?: <span class="title class_">ReactElement</span>; <span class="comment">// 表单项内容</span></span><br><span class="line">  valuePropName?: <span class="built_in">string</span>; <span class="comment">// 表单项值属性名</span></span><br><span class="line">  onChange?: <span class="function">(<span class="params"><span class="attr">e</span>: <span class="title class_">ChangeEvent</span>&lt;<span class="title class_">HTMLInputElement</span>&gt;</span>) =&gt;</span> <span class="built_in">void</span>; <span class="comment">// 表单项值变化回调</span></span><br><span class="line">  value?: <span class="built_in">string</span> | <span class="built_in">number</span> | <span class="built_in">boolean</span>; <span class="comment">// 表单项值</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> <span class="title function_">FormItem</span> = (<span class="params">&#123;</span></span><br><span class="line"><span class="params">  className,</span></span><br><span class="line"><span class="params">  style,</span></span><br><span class="line"><span class="params">  name, label,</span></span><br><span class="line"><span class="params">  rules,</span></span><br><span class="line"><span class="params">  valuePropName = <span class="string">&#x27;value&#x27;</span>,</span></span><br><span class="line"><span class="params">  children,</span></span><br><span class="line"><span class="params">  ...resetProps</span></span><br><span class="line"><span class="params">&#125;: <span class="title class_">FormItmProps</span></span>) =&gt; &#123;</span><br><span class="line">  <span class="keyword">const</span> &#123; onValuesChange, values = &#123;&#125;, registerValidator &#125; = <span class="title function_">useContext</span>(<span class="title class_">FormProvider</span>);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> [value, setValue] = useState&lt;<span class="built_in">string</span> | <span class="built_in">number</span> | <span class="built_in">boolean</span>&gt;();</span><br><span class="line">  <span class="keyword">const</span> [error, setError] = useState&lt;<span class="built_in">string</span> | <span class="literal">undefined</span>&gt;(<span class="string">&#x27;&#x27;</span>);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (name &amp;&amp; value != values[name]) &#123;</span><br><span class="line">    <span class="title function_">setValue</span>(values[name] <span class="keyword">as</span> <span class="built_in">string</span> | <span class="built_in">number</span> | <span class="built_in">boolean</span>);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="title function_">validate</span> = (<span class="params"><span class="attr">value</span>: <span class="built_in">unknown</span></span>) =&gt; &#123;</span><br><span class="line">    <span class="keyword">if</span> (!rules) &#123;</span><br><span class="line">      <span class="keyword">return</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">const</span> newRules = <span class="title class_">Array</span>.<span class="title function_">isArray</span>(rules) ? rules : [rules];</span><br><span class="line">    <span class="keyword">const</span> validator = <span class="keyword">new</span> <span class="title class_">Schema</span>(&#123;</span><br><span class="line">      [name]: newRules.<span class="title function_">map</span>(<span class="function">(<span class="params">rule</span>) =&gt;</span> (&#123; ...rule, &#125;)),</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> validator.<span class="title function_">validate</span>(&#123; [name]: value &#125;, &#123;&#125;, <span class="function">(<span class="params"><span class="attr">errors</span>: <span class="title class_">ValidateError</span>[] | <span class="literal">null</span></span>) =&gt;</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (errors &amp;&amp; errors.<span class="property">length</span>) &#123;</span><br><span class="line">        <span class="title function_">setError</span>(errors[<span class="number">0</span>].<span class="property">message</span>);</span><br><span class="line"></span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="title function_">setError</span>(<span class="string">&#x27;&#x27;</span>);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;);</span><br><span class="line">  &#125;;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="title function_">onChange</span> = <span class="keyword">async</span> (<span class="params"><span class="attr">e</span>: <span class="title class_">ChangeEvent</span>&lt;<span class="title class_">HTMLInputElement</span>&gt;</span>) =&gt; &#123;</span><br><span class="line">    <span class="keyword">const</span> value = <span class="title function_">getValueFormEvent</span>(e);</span><br><span class="line">    <span class="keyword">if</span> (name) &#123;</span><br><span class="line">      registerValidator?.(name, <span class="function">() =&gt;</span> <span class="title function_">validate</span>(value));</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">const</span> hasValidate = <span class="keyword">await</span> <span class="title function_">validate</span>(value);</span><br><span class="line">      <span class="keyword">if</span> (name &amp;&amp; hasValidate) &#123;</span><br><span class="line">        <span class="title function_">setValue</span>(value);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (e) &#123;</span><br><span class="line">      <span class="title function_">setError</span>(e.<span class="property">message</span>);</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      <span class="keyword">if</span> (name) &#123;</span><br><span class="line">        onValuesChange?.(name, value);</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    resetProps.<span class="property">onChange</span>?.(e);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> <span class="title function_">getValueFormEvent</span> = (<span class="params"><span class="attr">e</span>: <span class="title class_">ChangeEvent</span>&lt;<span class="title class_">HTMLInputElement</span>&gt;</span>) =&gt; &#123;</span><br><span class="line">    <span class="keyword">const</span> &#123; target &#125; = e;</span><br><span class="line">    <span class="keyword">return</span> target.<span class="property">type</span> === <span class="string">&#x27;checkbox&#x27;</span> ? target.<span class="property">checked</span> : target.<span class="property">value</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> childEle = <span class="title class_">Children</span>.<span class="title function_">toArray</span>(children).<span class="property">length</span> &gt; <span class="number">1</span> ? children : <span class="title function_">cloneElement</span>(children <span class="keyword">as</span> <span class="title class_">ReactElement</span>,</span><br><span class="line">    &#123;</span><br><span class="line">      [valuePropName]: name ? value : resetProps.<span class="property">value</span>,</span><br><span class="line">      onChange,</span><br><span class="line">    &#125;)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (!name) &#123;</span><br><span class="line">    <span class="keyword">return</span> children;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> (</span><br><span class="line">    <span class="language-xml"><span class="tag">&lt;<span class="name">div</span> <span class="attr">className</span>=<span class="string">&#123;className&#125;</span> <span class="attr">style</span>=<span class="string">&#123;style&#125;</span>&gt;</span></span></span><br><span class="line"><span class="language-xml">      <span class="tag">&lt;<span class="name">label</span> <span class="attr">htmlFor</span>=<span class="string">&#123;name&#125;</span>&gt;</span>&#123;label&#125;<span class="tag">&lt;/<span class="name">label</span>&gt;</span></span></span><br><span class="line"><span class="language-xml">      &#123;childEle&#125;</span></span><br><span class="line"><span class="language-xml">      &#123;error &amp;&amp; <span class="tag">&lt;<span class="name">div</span>&gt;</span>&#123;error&#125;<span class="tag">&lt;/<span class="name">div</span>&gt;</span>&#125;</span></span><br><span class="line"><span class="language-xml">    <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span></span><br><span class="line">  );</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">export</span> <span class="keyword">default</span> <span class="title class_">FormItem</span>;</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BD%8E%E4%BB%A3%E7%A0%81/" rel="tag"># 低代码</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2024/02/06/vu3%E5%93%8D%E5%BA%94%E5%BC%8F%E5%AE%9E%E7%8E%B01/" rel="prev" title="vu3响应式实现（1）">
+      <i class="fa fa-chevron-left"></i> vu3响应式实现（1）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/04/18/beginwork%E6%A0%B8%E5%BF%83%E6%B5%81%E7%A8%8B/" rel="next" title="beginwork核心流程">
+      beginwork核心流程 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88"><span class="nav-number">2.</span> <span class="nav-text">设计方案</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5"><span class="nav-number">2.1.</span> <span class="nav-text">设计理念</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%A6%81%E8%A7%A3%E5%86%B3%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">2.2.</span> <span class="nav-text">要解决的问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UML%E5%9B%BE"><span class="nav-number">2.3.</span> <span class="nav-text">UML图</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B%E5%9B%BE"><span class="nav-number">2.4.</span> <span class="nav-text">流程图</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E7%A0%81%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">编码实现</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Form%E7%BB%84%E4%BB%B6%E5%AE%9E%E7%8E%B0%E6%80%9D%E8%B7%AF"><span class="nav-number">3.1.</span> <span class="nav-text">Form组件实现思路</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#FormContext"><span class="nav-number">3.1.1.</span> <span class="nav-text">FormContext</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#FormStore"><span class="nav-number">3.1.2.</span> <span class="nav-text">FormStore</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#useForm"><span class="nav-number">3.1.3.</span> <span class="nav-text">useForm</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Form-%E7%BB%84%E4%BB%B6"><span class="nav-number">3.1.4.</span> <span class="nav-text">Form 组件</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Form-item%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.2.</span> <span class="nav-text">Form-item实现</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">朱广龙</p>
+  <div class="site-description" itemprop="description">定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">朱广龙</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

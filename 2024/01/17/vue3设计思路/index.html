@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 7.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="vue是一个声明式的ui框架，如果让你设计一个声明式的ui框架，你会怎么设计呢，下面我们将站在框架的设计者角度来一起探讨一下vue3的设计思路 为了让vue的设计思路更加清晰、易懂，我们可以将声明式UI与命令式UI的区别，用类似”行为主义”和”联结主义”这样的概念来形象化地解释。行为主义者认为人的行为是由外界的刺激所引起的，联结主义者则认为人的行为是由大脑内部的神经网络相互作用而形成的。vue的设">
+<meta property="og:type" content="article">
+<meta property="og:title" content="vue3设计思路">
+<meta property="og:url" content="http://example.com/2024/01/17/vue3%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF/index.html">
+<meta property="og:site_name" content="朱广龙的个人博客">
+<meta property="og:description" content="vue是一个声明式的ui框架，如果让你设计一个声明式的ui框架，你会怎么设计呢，下面我们将站在框架的设计者角度来一起探讨一下vue3的设计思路 为了让vue的设计思路更加清晰、易懂，我们可以将声明式UI与命令式UI的区别，用类似”行为主义”和”联结主义”这样的概念来形象化地解释。行为主义者认为人的行为是由外界的刺激所引起的，联结主义者则认为人的行为是由大脑内部的神经网络相互作用而形成的。vue的设">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/cd6be2faf50c4097a1ca6022377e5e26~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1146&h=426&s=23389&e=png&b=18151e">
+<meta property="article:published_time" content="2024-01-17T12:39:00.000Z">
+<meta property="article:modified_time" content="2024-10-10T05:15:33.749Z">
+<meta property="article:author" content="朱广龙">
+<meta property="article:tag" content="vue">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/cd6be2faf50c4097a1ca6022377e5e26~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1146&h=426&s=23389&e=png&b=18151e">
+
+<link rel="canonical" href="http://example.com/2024/01/17/vue3%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>vue3设计思路 | 朱广龙的个人博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">朱广龙的个人博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2024/01/17/vue3%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="朱广龙">
+      <meta itemprop="description" content="定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="朱广龙的个人博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          vue3设计思路
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2024-01-17 20:39:00" itemprop="dateCreated datePublished" datetime="2024-01-17T20:39:00+08:00">2024-01-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2024-10-10 13:15:33" itemprop="dateModified" datetime="2024-10-10T13:15:33+08:00">2024-10-10</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>vue是一个声明式的ui框架，如果让你设计一个声明式的ui框架，你会怎么设计呢，下面我们将站在框架的设计者角度来一起探讨一下vue3的设计思路</p>
+<p>为了让vue的设计思路更加清晰、易懂，我们可以将声明式UI与命令式UI的区别，用类似”行为主义”和”联结主义”这样的概念来形象化地解释。行为主义者认为人的行为是由外界的刺激所引起的，联结主义者则认为人的行为是由大脑内部的神经网络相互作用而形成的。vue的设计正是借鉴了这两种理论，将UI的设计视为一种外界的刺激，通过模版、对象、虚拟DOM、渲染器等一系列手段，使得UI的实现能够顺应行为主义的逻辑。同时，Vue还融入了联结主义的思想，将虚拟DOM看作是一个由神经元组成的网络，通过不断的学习和更新，最终实现对真实DOM的准确渲染。这种行为主义和联结主义的结合，让Vue的UI设计更加符合人类的认知和学习方式，从而达到了更高的效率和更好的用户体验。</p>
+<h2 id="声明式-VS-命令式"><a href="#声明式-VS-命令式" class="headerlink" title="声明式 VS 命令式"></a>声明式 VS 命令式</h2><p>声明式编程和命令式编程是两种不同的编程范式，它们在处理计算和编程逻辑的方式上有着显著的区别。以下是它们的基本特点和区别</p>
+<table>
+<thead>
+<tr>
+<th>特点</th>
+<th>声明式编程</th>
+<th>命令式编程</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>侧重点</td>
+<td>“做什么”（What to do）</td>
+<td>“如何做”（How to do）</td>
+</tr>
+<tr>
+<td>控制流</td>
+<td>通常使用表达式和描述性语言</td>
+<td>通常使用显式指令和控制结构</td>
+</tr>
+<tr>
+<td>数据可变性</td>
+<td>数据通常不可变</td>
+<td>数据通常可变</td>
+</tr>
+<tr>
+<td>状态管理</td>
+<td>通常避免显式状态管理</td>
+<td>通常需要显式状态管理</td>
+</tr>
+<tr>
+<td>编程范式</td>
+<td>常与函数式编程范式结合使用</td>
+<td>常与面向对象编程结合使用</td>
+</tr>
+<tr>
+<td>循环</td>
+<td>通常避免显式循环</td>
+<td>常使用循环和迭代控制结构</td>
+</tr>
+<tr>
+<td>数据转换</td>
+<td>重点在数据变换和操作</td>
+<td>重点在程序状态和控制流</td>
+</tr>
+<tr>
+<td>示例语言</td>
+<td>SQL、HTML、CSS、React等</td>
+<td>C、C++、Java、Python等</td>
+</tr>
+<tr>
+<td>代码可读性</td>
+<td>代码通常更易读和易懂</td>
+<td>代码中可能包含较多细节和控制逻辑</td>
+</tr>
+<tr>
+<td>应用领域</td>
+<td>数据查询、声明性描述</td>
+<td>通用应用、系统编程、面向对象编程</td>
+</tr>
+</tbody></table>
+<p>在设计一个声明式的ui框架之前我们需要搞清楚编写ui时会涉及到哪些问题，具体涉及到的问题如下</p>
+<ul>
+<li>DOM元素: div元素还是span元素或者其他元素</li>
+<li>属性: 比如元素的通用属性id，class等，元素的特有属性，比如a标签的herf，img的scr属性等</li>
+<li>事件: 比如鼠标事件click等以及键盘事件keydown等</li>
+<li>元素的结构: DOM的层级结构，比如父节点，子节点，兄弟节点，祖先节点等</li>
+</ul>
+<p>如果我们采用命令式的方法去描述以上内容，具体代码如下<br> <figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> divElm = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(<span class="string">&#x27;div&#x27;</span>);</span><br><span class="line">divElm.<span class="property">textContent</span> = <span class="string">&#x27;this is recommand demo&#x27;</span>;</span><br><span class="line">divElm.<span class="title function_">addEventListener</span>(<span class="string">&#x27;click&#x27;</span>, <span class="function">() =&gt;</span> <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;click me&#x27;</span>), <span class="literal">false</span>);</span><br></pre></td></tr></table></figure><br> 假如我们需要使用声明式的方式去实现，应当如何去实现呢，其实解决方案也比较多，我们拿vue3来说采用模版的方法去描述</p>
+<ul>
+<li>使用与html标签一致的方式来描述dom元素，例如一个div标签可以使用<div></div>或者<div />来描述</li>
+<li>使用v-bind来描述动态绑定的属性，例如<div v-bind:id="id"></div></li>
+<li>使用v-on来描述绑定的事件，例如<div v-on:click="onClick"></div></li>
+<li>使用与html一样的结构来描述层级结构，例如<div><span>hello vue3</span></div></li>
+</ul>
+<p>当然我们也可以通过javascript对象的形式来描述</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> vNode = &#123;</span><br><span class="line">  <span class="comment">// 标签名称</span></span><br><span class="line">  <span class="attr">tag</span>: <span class="string">&#x27;div&#x27;</span>,</span><br><span class="line">  <span class="comment">// 标签属性</span></span><br><span class="line">  <span class="attr">props</span>: &#123;</span><br><span class="line">    <span class="attr">onClick</span>: <span class="function">() =&gt;</span> &#123;</span><br><span class="line">      <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;click&#x27;</span>);</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;,</span><br><span class="line">  <span class="comment">// 子节点</span></span><br><span class="line">  <span class="attr">children</span>: [</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="attr">tag</span>: <span class="string">&#x27;span&#x27;</span>,</span><br><span class="line">      <span class="attr">children</span>: <span class="string">&#x27;hello, world&#x27;</span></span><br><span class="line">    &#125;,</span><br><span class="line">  ],</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<h2 id="虚拟dom"><a href="#虚拟dom" class="headerlink" title="虚拟dom"></a>虚拟dom</h2><p>那么使用模版和对象来描述UI时有什么不同呢，使用javscript来描述相对来说更加灵活，我们以需要渲染h1-h5为例，并且分情况展示</p>
+<p>模版描述<br>  <figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">templete</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">h1</span> <span class="attr">v-if</span>=<span class="string">&quot;level===1&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">h1</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">h2</span> <span class="attr">v-else-if</span>=<span class="string">&quot;level===2&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">h2</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">h3</span> <span class="attr">v-else-if</span>=<span class="string">&quot;level===3&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">h3</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">h4</span> <span class="attr">v-else-if</span>=<span class="string">&quot;level===4&quot;</span>&gt;</span><span class="tag">&lt;/<span class="name">h4</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">h5</span> <span class="attr">v-else</span>&gt;</span><span class="tag">&lt;/<span class="name">h5</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">templete</span>&gt;</span></span><br><span class="line"></span><br></pre></td></tr></table></figure></p>
+<p>  javascript对象描述</p>
+  <figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> vnode = &#123;</span><br><span class="line"> <span class="attr">type</span>: <span class="string">`h<span class="subst">$&#123;level&#125;</span>`</span>,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="string">``</span><span class="string">``</span></span><br><span class="line"></span><br><span class="line">从上面的结果来看，模版没有对象来得更加例灵活，其实这就是所谓的虚拟dom，其实虚拟dom没什么神秘的了吧，正是因为虚拟dom的这种灵活性，其实我们在vuejs组件中手写的render函数就是使用虚拟dom来描述ui，如下代码所示</span><br><span class="line"></span><br><span class="line"><span class="string">``</span><span class="string">`javascript</span></span><br><span class="line"><span class="string">import &#123; h &#125; from &#x27;vue&#x27;;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">export default &#123;</span></span><br><span class="line"><span class="string">  render()&#123;</span></span><br><span class="line"><span class="string">  return h(&#x27;div&#x27;, &#123; onClick: onClick &#125;);</span></span><br><span class="line"><span class="string">  &#125;;</span></span><br><span class="line"><span class="string">&#125;;</span></span><br></pre></td></tr></table></figure>
+<h2 id="渲染器"><a href="#渲染器" class="headerlink" title="渲染器"></a>渲染器</h2><p> 现在我们已经了解什么是虚拟dom，它的本质其实就是用javascript对象来描述真实的dom结构，那么虚拟dom是如何变成真实dom渲染到页面中呢，这其实涉及到了渲染器</p>
+<p> 渲染器的作用就是把虚拟dom渲染为真实dom，如图所示</p>
+<p><img src="https://p1-juejin.byteimg.com/tos-cn-i-k3u1fbpfcp/cd6be2faf50c4097a1ca6022377e5e26~tplv-k3u1fbpfcp-jj-mark:0:0:0:0:q75.image#?w=1146&h=426&s=23389&e=png&b=18151e" alt="image.png"></p>
+<p>渲染器是非常重要的角色，大家平时编写的vue组件都是通过渲染器来进行工作的，</p>
+<p>我们假设有如下虚拟dom</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> vnode = &#123;</span><br><span class="line">  <span class="attr">tag</span>: <span class="string">&#x27;div&#x27;</span>, <span class="comment">// 标签名称</span></span><br><span class="line">  <span class="attr">props</span>: &#123;</span><br><span class="line">    <span class="attr">calssName</span>: <span class="string">&#x27;div&#x27;</span></span><br><span class="line">    <span class="attr">on</span>: &#123;</span><br><span class="line">      <span class="attr">click</span>: <span class="function">() =&gt;</span> <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;click me&#x27;</span>); <span class="comment">// 点击事件</span></span><br><span class="line">    &#125;,</span><br><span class="line"> &#125;,</span><br><span class="line"> <span class="attr">children</span>: <span class="string">&#x27;hello vue&#x27;</span>, <span class="comment">//标签的子节点</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>接下来我们需要编写一个渲染器，将上面这段虚拟dom代码渲染为真实dom</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"> * @description 将虚拟dom渲染为真实的dom</span><br><span class="line"> * @param &#123;<span class="title class_">VNode</span>&#125; vNode 虚拟dom对象</span><br><span class="line"> * @param &#123; <span class="title class_">HTMLElement</span> &#125; container 挂载点</span><br><span class="line"> */</span><br><span class="line"><span class="keyword">function</span> <span class="title function_">renderer</span>(<span class="params">vNode, container</span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> &#123; tag, props = &#123;&#125; children  &#125; = vNode;</span><br><span class="line">  <span class="keyword">const</span> ons = props.<span class="property">on</span> || &#123;&#125;;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 创建真实dom</span></span><br><span class="line">  <span class="keyword">const</span> el = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(tag);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 处理属性,将dom事件进行添加</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">const</span> key <span class="keyword">in</span> props) &#123;</span><br><span class="line">      <span class="keyword">if</span> (key === <span class="string">&#x27;on&#x27;</span>) &#123;</span><br><span class="line">      <span class="comment">// 将事件进行绑定</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">const</span> eventName <span class="keyword">in</span> ons) &#123;</span><br><span class="line">           el.<span class="title function_">addEventListener</span>(eventName, ons[eventName]);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 递归处理子节点</span></span><br><span class="line">    <span class="keyword">if</span> (children) &#123;</span><br><span class="line">      <span class="comment">// 单个文本节点 </span></span><br><span class="line">      <span class="keyword">if</span> (<span class="keyword">typeof</span> children === <span class="string">&#x27;string&#x27;</span>) &#123;</span><br><span class="line">        el.<span class="title function_">appendChild</span>(<span class="variable language_">document</span>.<span class="title function_">createTextNode</span>(children));</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 多个节点</span></span><br><span class="line">      &#125; <span class="keyword">else</span> <span class="keyword">if</span>（<span class="title class_">Array</span>.<span class="title function_">isArray</span>(<span class="params">children</span>)&#123;</span><br><span class="line">         children.<span class="title function_">forEach</span>(<span class="function"><span class="params">child</span> =&gt;</span> <span class="title function_">renderer</span>(child, el));</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 将元素挂载到挂载点</span></span><br><span class="line">    container.<span class="title function_">appendChild</span>(el)</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="title function_">render</span>(vnode, <span class="variable language_">document</span>.<span class="property">body</span>);</span><br></pre></td></tr></table></figure>
+<p>现在我们来分析 渲染器做了什么事</p>
+<ul>
+<li>创建元素：根据标签名来创建dom元素</li>
+<li>为元素添加属性和事件：遍历vnode的props对象，如果key是on，说明on里面绑定的全是对象</li>
+<li>处理children： 如果children是一个数组，就递归的调用render进行渲染，如果是文本节点调用createTextNode创建文本节点</li>
+</ul>
+<p>是不是突然感觉渲染器没有那么神秘了呢，其实我们别忘了我们目前仅涉及到创建节点，还未涉及到更新节点，渲染器的精髓其实在更新节点的阶段，渲染器的工作原理其实是利用我们所熟悉的api来完成渲染工作</p>
+<h2 id="组件的本质"><a href="#组件的本质" class="headerlink" title="组件的本质"></a>组件的本质</h2><p>其实虚拟dom除了能够描述真实dom之外，还能够描述组件，那么如何使用虚拟dom来描述组件呢，想要明白这个问题，我们就需要知道组件的本质是什么， 组件其实就是一组dom元素的封装，这组元素就是组件要渲染的内容</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// 函数式组件</span></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">functionComponent</span>(<span class="params"></span>)&#123;</span><br><span class="line"> <span class="keyword">return</span> &#123;</span><br><span class="line">  <span class="attr">tag</span>: <span class="string">&#x27;div&#x27;</span>, <span class="comment">// 标签名称</span></span><br><span class="line">  <span class="attr">props</span>: &#123;</span><br><span class="line">    <span class="attr">calssName</span>: <span class="string">&#x27;div&#x27;</span></span><br><span class="line">    <span class="attr">on</span>: &#123;</span><br><span class="line">      <span class="attr">click</span>: <span class="function">() =&gt;</span> <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;click me&#x27;</span>); <span class="comment">// 点击事件</span></span><br><span class="line">    &#125;,</span><br><span class="line"> &#125;,</span><br><span class="line"> <span class="attr">children</span>: <span class="string">&#x27;hello vue&#x27;</span>, <span class="comment">//标签的子节点</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 类组件</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ClassComponent</span> &#123;</span><br><span class="line">  <span class="title function_">render</span>(<span class="params"></span>) &#123;</span><br><span class="line">    <span class="keyword">return</span> &#123;</span><br><span class="line">      <span class="attr">tag</span>: <span class="string">&#x27;div&#x27;</span>, <span class="comment">// 标签名称</span></span><br><span class="line">      <span class="attr">props</span>: &#123;</span><br><span class="line">        <span class="attr">calssName</span>: <span class="string">&#x27;div&#x27;</span></span><br><span class="line">        <span class="attr">on</span>: &#123;</span><br><span class="line">          <span class="attr">click</span>: <span class="function">() =&gt;</span> <span class="variable language_">console</span>.<span class="title function_">log</span>(<span class="string">&#x27;click me&#x27;</span>); <span class="comment">// 点击事件</span></span><br><span class="line">        &#125;,</span><br><span class="line">     &#125;,</span><br><span class="line">     <span class="attr">children</span>: <span class="string">&#x27;hello vue&#x27;</span>, <span class="comment">//标签的子节点</span></span><br><span class="line">      &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> componentVnode = &#123;</span><br><span class="line">  <span class="attr">tag</span>: functionComponent,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>我们发现此时组件的tag属性不再是标签名称，而是一个函数或者类</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"> <span class="keyword">function</span> <span class="title function_">render</span>(<span class="params">vnode, container</span>)&#123;</span><br><span class="line">   <span class="keyword">if</span> (<span class="keyword">typeof</span> vnode.<span class="property">tag</span> ==== <span class="string">&#x27;object&#x27;</span> &amp;&amp; vnode.<span class="property">tag</span> !== <span class="literal">null</span>) &#123;</span><br><span class="line">      <span class="title function_">mountComponent</span>(vnode, container);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (<span class="keyword">typeof</span> vnode.<span class="property">tag</span> === <span class="string">&#x27;string&#x27;</span>) &#123;</span><br><span class="line">      <span class="title function_">mountElement</span>(vnode, container);</span><br><span class="line">    &#125;</span><br><span class="line"> &#125;;</span><br><span class="line"> </span><br><span class="line"> <span class="keyword">function</span> <span class="title function_">mountElement</span>(<span class="params">vNode, container</span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> &#123; tag, props = &#123;&#125; children  &#125; = vNode;</span><br><span class="line">  <span class="keyword">const</span> ons = props.<span class="property">on</span> || &#123;&#125;;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 创建真实dom</span></span><br><span class="line">  <span class="keyword">const</span> el = <span class="variable language_">document</span>.<span class="title function_">createElement</span>(tag);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// 处理属性,将dom事件进行添加</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">const</span> key <span class="keyword">in</span> props) &#123;</span><br><span class="line">      <span class="keyword">if</span> (key === <span class="string">&#x27;on&#x27;</span>) &#123;</span><br><span class="line">      <span class="comment">// 将事件进行绑定</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">const</span> eventName <span class="keyword">in</span> ons) &#123;</span><br><span class="line">           el.<span class="title function_">addEventListener</span>(eventName, ons[eventName]);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 递归处理子节点</span></span><br><span class="line">    <span class="keyword">if</span> (children) &#123;</span><br><span class="line">      <span class="comment">// 单个文本节点 </span></span><br><span class="line">      <span class="keyword">if</span> (<span class="keyword">typeof</span> children === <span class="string">&#x27;string&#x27;</span>) &#123;</span><br><span class="line">        el.<span class="title function_">appendChild</span>(<span class="variable language_">document</span>.<span class="title function_">createTextNode</span>(children));</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 多个节点</span></span><br><span class="line">      &#125; <span class="keyword">else</span> <span class="keyword">if</span>（<span class="title class_">Array</span>.<span class="title function_">isArray</span>(<span class="params">children</span>)&#123;</span><br><span class="line">         children.<span class="title function_">forEach</span>(<span class="function"><span class="params">child</span> =&gt;</span> <span class="title function_">renderer</span>(child, el));</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// 将元素挂载到挂载点</span></span><br><span class="line">    container.<span class="title function_">appendChild</span>(el)</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">mountComponent</span>(<span class="params">vnode, container</span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> subTree = <span class="string">&#x27;render&#x27;</span> <span class="keyword">in</span> vnode.<span class="property">tag</span> ? vnode.<span class="property">tag</span>.<span class="title function_">render</span>() : vnode.<span class="title function_">tag</span>();</span><br><span class="line">  </span><br><span class="line">  <span class="comment">// 递归调用渲染sutree</span></span><br><span class="line">  <span class="title function_">render</span>(subTeree, container);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>可以看到，如果tag是函数，那么我们就知道它其实是组件本身的函数</p>
+<h2 id="模版的工作原理"><a href="#模版的工作原理" class="headerlink" title="模版的工作原理"></a>模版的工作原理</h2><p>无论是手写虚拟dom还是使用模版，都属于声明式ui，并且vue同时支持2种声明式的描述ui，上面我们了解到了虚拟dom是如何渲染成真实dom的，那么模版是如何工作的<br>这其实是vue的另一个重要组成部分: 编译器</p>
+<p>编译器和渲染器其实一样，只是一段程序而已，不过他们的工作内容不同，编译器的作用其实就是将模版编译成渲染函数</p>
+<figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">div</span> @<span class="attr">click</span>=<span class="string">&quot;onClick&quot;</span>&gt;</span> click me <span class="tag">&lt;/<span class="name">div</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>对于编译器来说，模版就是一个普通的字符串，它会分析该字符串并生成一个功能与之相同的渲染函数</p>
+ <figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">render</span>(<span class="params">h</span>)&#123;</span><br><span class="line"> <span class="keyword">return</span> <span class="title function_">h</span>(<span class="string">&#x27;div&#x27;</span>,&#123; <span class="attr">onClick</span>: onClick &#125;, <span class="string">&#x27;click me&#x27;</span>);</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+<p> 以我们熟悉的.vue文件为例，一个.vue文件就是一个组件<br> <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&lt;templete&gt;</span><br><span class="line"> &lt;div @clik=&#x27;onClick&#x27;&gt; click me  &lt;/div&gt;</span><br><span class="line">&lt;/templete&gt;</span><br><span class="line"></span><br><span class="line">&lt;script setup lang=&quot;ts&quot;&gt;</span><br><span class="line"> const onClick = () =&gt; &#123;&#125;;</span><br><span class="line">&lt;/script&gt;</span><br><span class="line"></span><br></pre></td></tr></table></figure></p>
+<p> 其中templete标签的内容就是模版内容，编译器会把模版内容编译成渲染函数并添加到script标签中</p>
+ <figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">export</span> <span class="keyword">default</span> &#123;</span><br><span class="line">  <span class="attr">methods</span>: &#123;</span><br><span class="line">    <span class="title function_">onClick</span>(<span class="params"></span>)&#123;&#125;,</span><br><span class="line">  &#125;,</span><br><span class="line">  </span><br><span class="line">  <span class="title function_">render</span>(<span class="params"></span>)&#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="title function_">h</span>(<span class="string">&#x27;div&#x27;</span>, &#123; <span class="attr">onClick</span>: onClick &#125;, <span class="string">&#x27;click me&#x27;</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p> 所以无论是使用模版还是直接手写渲染函数，对于一个组件来说，它最终的内容都是通过渲染函数产生的，<br> 然后渲染器再把渲染函数返回的虚拟dom渲染为真实dom</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><ul>
+<li>vue是一个声明式的框架，声明式的好处在于直接描述结果</li>
+<li>vue采用模版的方式来描述ui，但它同样支持使用虚拟dom来描述ui</li>
+<li>渲染器的作用: 将虚拟dom对象渲染为真实dom对象，工作原理本质就是通过递归遍历递归虚拟dom对象利用dom相关的api来完成真实dom的创建</li>
+<li>组件本质是一组虚拟dom元素的封装</li>
+<li>vue的模版会被一个叫做编译器的程序进行编译为渲染函数</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/vue/" rel="tag"># vue</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/01/17/commonjs%E6%8F%AD%E7%A7%98/" rel="prev" title="commonjs揭秘">
+      <i class="fa fa-chevron-left"></i> commonjs揭秘
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2024/02/06/vue3%E5%93%8D%E5%BA%94%E5%BC%8F%E8%AE%BE%E8%AE%A12/" rel="next" title="vu3响应式实现（2）">
+      vu3响应式实现（2） <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A3%B0%E6%98%8E%E5%BC%8F-VS-%E5%91%BD%E4%BB%A4%E5%BC%8F"><span class="nav-number">1.</span> <span class="nav-text">声明式 VS 命令式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%99%9A%E6%8B%9Fdom"><span class="nav-number">2.</span> <span class="nav-text">虚拟dom</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B8%B2%E6%9F%93%E5%99%A8"><span class="nav-number">3.</span> <span class="nav-text">渲染器</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%84%E4%BB%B6%E7%9A%84%E6%9C%AC%E8%B4%A8"><span class="nav-number">4.</span> <span class="nav-text">组件的本质</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E7%89%88%E7%9A%84%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86"><span class="nav-number">5.</span> <span class="nav-text">模版的工作原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">6.</span> <span class="nav-text">总结</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">朱广龙</p>
+  <div class="site-description" itemprop="description">定期会更新前端技术栈 不限于vue，react，node以及部分后端的知识</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">11</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">8</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">朱广龙</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
